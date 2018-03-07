@@ -1,7 +1,6 @@
 import socket
-import struct
-import random
-import enum
+import struct # For networky data packing
+import random # For generating "uid"s
 
 class FTProto:
 	# 	Ready to send data, followed by a ulong each of message
