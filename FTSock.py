@@ -120,6 +120,7 @@ class FTSock:
 			totalsent = totalsent + sent
 
 	# TODO: Rewrite these to use the original socket.{send,recv}msg()?
+	# TODO: See if moving the command chars into the structs works
 
 	# Receives a message, handling lengthy and transacty stuff
 	def recvmsg(self):
