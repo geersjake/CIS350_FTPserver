@@ -1,6 +1,7 @@
 import socket
 import struct # For networky data packing
 import random # For generating "uid"s
+import queue  # For the timeout stack
 
 class FTProto:
 	# 	Ready to send data, followed by a ulong each of message
@@ -28,7 +29,10 @@ class FTProto:
 	# Sent preceding actual data
 	DATA_SEND  = b'D'
 
-# 	TODO: Error checking and handling, plus properly closing the sockets and timing out
+# 	TODO: 	Error checking and handling
+#			Properly closing / reusing sockets
+#			Integrating timeout stack
+#			Maybe __'ing internal functions?
 
 # Basic network unit, used for connecting and transferring data over TCP
 class FTSock:
@@ -43,8 +47,29 @@ class FTSock:
 		else:
 			self.sock = sock
 
+		# Initialize timeout stack
+		self.tostack = queue.Queue()
+
 		# Seed RNG so UIDs are actually "Random"
 		random.seed()
+
+	# 	These three functions allow us to quickly and easily switch between
+	# timeouts
+	def topush(self, val):
+		self.tostack.put(self.sock.gettimeout())
+		self.sock.settimeout(val)
+
+	def topop(self):
+		oldtimeout = self.sock.gettimeout()
+
+		# If the queue is empty, default to None (blocking mode) (shouldn't happen)
+		newtimeout = None if self.tostack.empty() else self.tostack.get()
+
+		self.sock.settimeout(newtimeout)
+		return oldtimeout
+
+	def settimeout(self, val):
+		self.sock.settimeout(val)
 
 	# Connect to host as if it were a server
 	def conclient(self, host, port):
@@ -56,10 +81,13 @@ class FTSock:
 		self.sock.bind(("", port))
 		conn, addr = "", ""
 
-		# Reject connections until the host matches
+		# Reject connections until the host matches (within 5m)
+		self.topush(480) 
 		while (addr != host):
 			self.sock.listen(1)
 			conn, (addr, port) = self.sock.accept()
+		self.topop()
+
 
 		self.sock = conn
 
@@ -120,7 +148,6 @@ class FTSock:
 			totalsent = totalsent + sent
 
 	# TODO: Rewrite these to use the original socket.{send,recv}msg()?
-	# TODO: See if moving the command chars into the structs works
 
 	# Receives a message, handling lengthy and transacty stuff
 	def recvmsg(self):
@@ -135,8 +162,7 @@ class FTSock:
 		mlen, muid = self.recvstruct("!II")
 
 		# Repack and send response
-		resp = struct.pack("!II", mlen, muid)
-		self.sendbytes(FTProto.READY_RECV)
+		resp = struct.pack("!cII", FTProto.READY_RECV, mlen, muid)
 		self.sendbytes(resp)
 
 		# Make sure they are sending the data :P
@@ -159,8 +185,7 @@ class FTSock:
 		uid = random.randint(0, 2**32)
 
 		# Send header to see if they are ready
-		header = struct.pack("!II", msglen, uid)
-		self.sendbytes(FTProto.READY_SEND)
+		header = struct.pack("!cII", FTProto.READY_SEND, msglen, uid)
 		self.sendbytes(header)
 
 		# Make sure they are ready
