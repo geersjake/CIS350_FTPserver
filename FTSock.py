@@ -1,6 +1,5 @@
 import socket
 import struct # For networky data packing
-import random # For generating "uid"s
 import queue  # For the timeout stack
 
 class FTProto:
@@ -29,6 +28,21 @@ class FTProto:
 	# Sent preceding actual data
 	DATA_SEND  = b'D'
 
+class UnexpectedValueError(RuntimeError):
+	def __init__(self, state, value):
+		self.state = state
+		self.value = value
+
+	def __repr__(self):
+		return "UnexpectedValueError('" + self.state + "', '" + self.value + "'')"
+
+	def __str__(self):
+		return "in " + self.state + ", but got " + self.value
+
+class BrokenSocketError(RuntimeError):
+	def __str__(self):
+		return "Socket broken unexpectedly"
+
 # 	TODO: 	Error checking and handling
 #			Properly closing / reusing sockets
 #			Integrating timeout stack
@@ -49,9 +63,6 @@ class FTSock:
 
 		# Initialize timeout stack
 		self.tostack = queue.Queue()
-
-		# Seed RNG so UIDs are actually "Random"
-		random.seed()
 
 	# 	These three functions allow us to quickly and easily switch between
 	# timeouts
@@ -127,7 +138,7 @@ class FTSock:
 		while totalrecvd < num:
 			chunk = self.sock.recv(min(num-totalrecvd, 2048))
 			if chunk == b'':
-				raise RuntimeError("Socket connection broken")
+				raise BrokenSocketError()
 			chunks.append(chunk)
 			totalrecvd = totalrecvd + len(chunk)
 		return b''.join(chunks)
@@ -144,7 +155,7 @@ class FTSock:
 		while totalsent < num:
 			sent = self.sock.send(str[totalsent:])
 			if sent == 0:
-				raise RuntimeError("Socket connection broken")
+				raise BrokenSocketError()
 			totalsent = totalsent + sent
 
 	# TODO: Rewrite these to use the original socket.{send,recv}msg()?
@@ -157,18 +168,9 @@ class FTSock:
 		if cmd != FTProto.READY_SEND:
 			return -1
 		# i.e. ^ that stuff
-		
-		# length and uid are always sent after the READY_SEND
-		mlen, muid = self.recvstruct("!II")
-
-		# Repack and send response
-		resp = struct.pack("!cII", FTProto.READY_RECV, mlen, muid)
-		self.sendbytes(resp)
 
 		# Make sure they are sending the data :P
-		cmd = self.recvbytes(1)
-		if cmd != FTProto.DATA_SEND:
-			return -2
+		mlen = self.recvstruct('!I')[0]
 
 		# Receive the data
 		return self.recvbytes(mlen)
@@ -182,23 +184,13 @@ class FTSock:
 		if msglen > (2**32):
 			raise RuntimeError("Message too long")
 
-		uid = random.randint(0, 2**32)
-
 		# Send header to see if they are ready
-		header = struct.pack("!cII", FTProto.READY_SEND, msglen, uid)
+		header = struct.pack("!cI", FTProto.READY_SEND, msglen)
 		self.sendbytes(header)
 
-		# Make sure they are ready
-		resp = self.recvbytes(1)
-		if resp == FTProto.READY_RECV:
-			rlen, ruid = self.recvstruct("!II")
-			if (rlen != msglen or ruid != uid):
-				self.sendbytes(FTProto.ERR_CANCEL)
-				return False, "Response mismatch"
+		self.sendbytes(msg)
 
-			# Send the data
-			self.sendbytes(FTProto.DATA_SEND)
-			self.sendbytes(msg)
+
 
 
 
