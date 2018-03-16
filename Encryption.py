@@ -16,7 +16,15 @@ class Encryption:
     def encrypt(self):
         cryptor = rncryptor.RNCryptor()
         encrypted_data = cryptor.encrypt(self.data, self.password)
-        return encrypted_data
+        self.data = encrypted_data
+        return self.data
+
+    def decrypt(self):
+        cryptor = rncryptor.RNCryptor()
+        decrypted_data = cryptor.decrypt(self.data, self._password)
+        self.data = decrypted_data
+        return self.data
+
 
     @property
     def data(self):
@@ -42,4 +50,7 @@ class Encryption:
 msg = "hello"
 passkey = "jimmy"
 enc = Encryption(msg, passkey)
-print(enc.encrypt())
+e_data = enc.encrypt()
+print(e_data)
+d_data = enc.decrypt()
+print(d_data)
