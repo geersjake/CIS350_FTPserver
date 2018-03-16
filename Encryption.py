@@ -1,18 +1,45 @@
-"""Hashing - can be used to hash password to the server,
-hashing the file names, or even the actions we send over the wire.
+import rncryptor  # https://github.com/RNCryptor/RNCryptor-python
 
-Jake Geers
-2-25-2018
 
-"""
-import hashlib
+class Encryption:
+    """
+    Main class to handel byte encrypting as well as decrypting using RSA.
+    Class creates two keys:
+        Public Key - key sent over wire
+        Private Key - key kept
+    """
 
-password = 'adminguestpassword'
-bytePassword = str.encode(password)  # md5 requires argument to be in byte code
-md5 = hashlib.md5()  # could be any other sha or RSA md5
+    def __init__(self, data, password):
+        self._data = data
+        self._password = password
 
-md5.update(bytePassword)  # Update the given report ID with all data from report
-print(md5.digest())  # Return the digest value as a string of binary data.
+    def encrypt(self):
+        cryptor = rncryptor.RNCryptor()
+        encrypted_data = cryptor.encrypt(self.data, self.password)
+        return encrypted_data
 
-sha256 = hashlib.sha256(bytePassword).hexdigest()
-print(sha256)
+    @property
+    def data(self):
+        """Getter"""
+        return self._data
+
+    @data.setter
+    def data(self, new_data):
+        """Setter"""
+        self._data = new_data
+
+    @property
+    def password(self):
+        """Getter"""
+        return self._password
+
+    @password.setter
+    def password(self, new_pass):
+        """Setter"""
+        self._password = new_pass
+
+
+msg = "hello"
+passkey = "jimmy"
+enc = Encryption(msg, passkey)
+print(enc.encrypt())
