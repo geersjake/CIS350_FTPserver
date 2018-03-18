@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import filedialog
-import pathlib as pl
+import Encryption as en
 
 class Application(Frame):
     def __init__(self, master=None):
@@ -25,10 +25,12 @@ class Application(Frame):
 
     def encryptfile(self):
         fileName = filedialog.askopenfilename(filetypes = (("HTML files", "*.html;*.htm"),("All files", "*.*")))
+        en.encrypt(fileName)
         print("Your file " + fileName +" has been encrypted and can be sent")
 
     def decryptfile(self):
         fileName = filedialog.askopenfilename(filetypes=(("HTML files", "*.html;*.htm"), ("All files", "*.*")))
+        en.decrypt(fileName)
         print("Your file " + fileName + " has been decrypted and can be viewed")
 root = Tk()
 app = Application(master=root)
