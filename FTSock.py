@@ -109,7 +109,6 @@ class FTSock:
 	# telling which mode we are in, and either "Success" or a
 	# more descriptive error string
 	def connect(self, host, port):
-		msg = ""
 		try: # Connecting as client -> server
 			self.conclient(host, port)
 
@@ -145,15 +144,15 @@ class FTSock:
 
 	# Returns an unpacked struct recieved
 	def recvstruct(self, fmt):
-		len = struct.calcsize(fmt)
-		return struct.unpack(fmt, self.recvbytes(len))
+		slen = struct.calcsize(fmt)
+		return struct.unpack(fmt, self.recvbytes(slen))
 
 	# Sends *only* the bytes passed in (no header etc)
-	def sendbytes(self, str):
-		num = len(str)
+	def sendbytes(self, bstr):
+		num = len(bstr)
 		totalsent = 0
 		while totalsent < num:
-			sent = self.sock.send(str[totalsent:])
+			sent = self.sock.send(bstr[totalsent:])
 			if sent == 0:
 				raise BrokenSocketError()
 			totalsent = totalsent + sent
@@ -189,9 +188,3 @@ class FTSock:
 		self.sendbytes(header)
 
 		self.sendbytes(msg)
-
-
-
-
-
-
