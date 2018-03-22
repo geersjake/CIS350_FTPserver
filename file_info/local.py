@@ -7,7 +7,7 @@
 from hashlib import sha256
 from os import fsencode
 
-from FileInfo import FileInfo
+from file_info import FileInfo
 
 
 
