@@ -1,12 +1,10 @@
-"""
+"""Handle queries and updates of local files.
 :Authors:
     Chris van Zomeren
-    
+
 :Date: 2018-03-07
 """
-from pathlib import Path
 from hashlib import sha256
-from collections import defaultdict
 from os import fsencode
 
 from FileInfo import FileInfo
@@ -14,8 +12,7 @@ from FileInfo import FileInfo
 
 
 class LocalFileInfoBrowser:
-    """
-    This class handles requests for information about local files.
+    """Handles requests for information about local files.
     """
     # Note that there is a cycle between
     #   getFreshHash, listInfo, getInfo, and forceRefresh
@@ -37,96 +34,109 @@ class LocalFileInfoBrowser:
         self.__cache = dict()
 
 
-    def getFreshHash(self, path):
-        """
-        Get the hash of the file located at path.
+    def get_fresh_hash(self, path):
+        """Get the hash of the file located at path.
         For regular files, this hash is generated from the file contents.
         For directories, this hash is generated from the names and
         (possibly cached) hashes of the directory contents.
 
         :param path: The path of the file to hash.
+        :type path: Path
+
+        :returns: A hash of the file contents.
+        :rtype: hashlib.sha256
         """
-        hash = sha256()
+        file_hash = sha256()
         if path.is_file():
-            hash.update(path.read_bytes())
+            file_hash.update(path.read_bytes())
         elif path.is_dir():
-            for info in sorted(self.listInfo(path), key=lambda _:_.path.name):
-                hash.update(fsencode(info.path.name))
-                hash.update(info.hash.digest())
+            for info in sorted(self.list_info(path), key=lambda _: _.path.name):
+                file_hash.update(fsencode(info.path.name))
+                file_hash.update(info.hash.digest())
         else:
-            raise NotImplemented()
-        
-        return hash
+            raise NotImplementedError()
+
+        return file_hash
 
 
-    def isPossiblyChanged(self, path):
-        """
-        Determine whether the file located at path is different
+    def is_possibly_changed(self, path):
+        """Determine whether the file located at path is different
         from the last cached version, allowing some false positives.
         For directories, a directory is changed if any of its contents
         have changed.
 
         :param path: The path of the file to check for changes.
+        :type path: Path
+
+        :returns: Whether the file at path has possibly changed.
+        :rtype: boolean
         """
         return (
             path not in self.__cache
             or not path.exists()
             or path.is_dir and any(
-                (self.isPossiblyChanged(f_path) for f_path in path.iterdir()))
+                (self.is_possibly_changed(f_path) for f_path in path.iterdir()))
             or path.stat().st_mtime_ns > self.__cache[path].mtime)
 
 
-    def __shallowRefresh(self, path):
-        """
-        Replace the cached information for the file located at path
+    def __shallow_refresh(self, path):
+        """Replace the cached information for the file located at path
         with fresh information from the filesystem.
         If the file is a directory, this is not guaranteed to refresh
         all the information for its contents; to force an entire
         directory tree to be refreshed, use forceRefresh().
 
         :param path: The path of the file to refresh information for.
+        :type path: pathlib.Path
         """
         if path.exists():
             self.__cache[path] = FileInfo(
                 path = path,
                 is_dir = path.is_dir(),
                 mtime = path.stat().st_mtime_ns,
-                hash = self.getFreshHash(path))
+                file_hash = self.get_fresh_hash(path))
         else:
             del self.__cache[path]
 
 
-    def forceRefresh(self, path):
-        """
-        Replace the cached information for the file located at path
+    def force_refresh(self, path):
+        """Replace the cached information for the file located at path
         with fresh information from the filesystem.
         If the file is a directory, this includes recursively refreshing
         the information for all its contents.
 
         :param path: The path of the file to refresh information for.
+        :type path: pathlib.Path
         """
         if path.is_dir():
             for f_path in path.iterdir():
-                self.forceRefresh(f_path)
-        self.__shallowRefresh(path)
+                self.force_refresh(f_path)
+        self.__shallow_refresh(path)
 
 
-    def getInfo(self, path):
-        """
-        Get a FileInfo instance representing the file at path.
+    def get_info(self, path):
+        """Get a FileInfo instance representing the file at path.
 
         :param path: The path of the file.
+        :type path: pathlib.Path
+
+        :returns: A summary of the file at path.
+        :rtype: FileInfo
         """
-        if self.isPossiblyChanged(path):
-            self.__shallowRefresh(path)
+        if self.is_possibly_changed(path):
+            self.__shallow_refresh(path)
         return self.__cache.get(path)
 
 
-    def listInfo(self, path):
-        """
-        Get a list of FileInfo instances representing all the files
+    def list_info(self, path):
+        """Get a list of FileInfo instances representing all the files
         in the directory at path.
 
         :param path: The path of the directory to list files of.
+        :type path: pathlib.Path
+
+        :returns: A summary of all files in the directory at path.
+        :rtype: list of FileInfo
         """
-        return [self.getInfo(f_path) for f_path in path.iterdir()]
+        return [self.get_info(f_path) for f_path in path.iterdir()]
+
