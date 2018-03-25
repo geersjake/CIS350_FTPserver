@@ -31,7 +31,7 @@ class Encryption:
         :param data: The data to encrypt or decrypt
         :type data: str
 
-        :param password: The passsword key to encrypt or decrypt data
+        :param password: The password key to encrypt or decrypt data
         :type password: str
         """
         self._data = data
