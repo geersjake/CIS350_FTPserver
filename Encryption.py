@@ -90,19 +90,6 @@ class Encryption:
 
 ############ temp testing #################
 
-class Student(object):
-    name = "sam"
-    age = 0
-
-
-def make_student(name, age):
-    student = Student()
-    student.name = name
-    student.age = age
-    return student
-
-
-s = make_student("jill", 24)
 
 msg = ""
 passkey = ""
