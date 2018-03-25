@@ -15,7 +15,7 @@ class LocalFileInfoBrowser:
     """Handles requests for information about local files.
     """
     # Note that there is a cycle between
-    #   getFreshHash, listInfo, getInfo, and forceRefresh
+    #   get_fresh_hash, list_info, get_info, and force_refresh
     # when getting the hash of a directory.
     # This is because we determine the hash of a directory
     # from the hashes of its contents, and we want to get
@@ -25,13 +25,13 @@ class LocalFileInfoBrowser:
     # still left in the cache until one of the refresh methods
     # is called with that specific path, or until refreshAll() is called.
     # This should not be a problem, since
-    # a) isPossiblyChanged() will be true for a deleted file,
+    # a) is_possibly_changed() will be true for a deleted file,
     #     so deleted files _will_ be refreshed when needed.
     # b) listings of directory contents are not cached,
     #     so deleted files will _not_ be included by mistake.
 
     def __init__(self):
-        self.__cache = dict()
+        self._cache = dict()
 
 
     def get_fresh_hash(self, path):
@@ -72,31 +72,31 @@ class LocalFileInfoBrowser:
         :rtype: boolean
         """
         return (
-            path not in self.__cache
+            path not in self._cache
             or not path.exists()
             or path.is_dir and any(
                 (self.is_possibly_changed(f_path) for f_path in path.iterdir()))
-            or path.stat().st_mtime_ns > self.__cache[path].mtime)
+            or path.stat().st_mtime_ns > self._cache[path].mtime)
 
 
-    def __shallow_refresh(self, path):
+    def _shallow_refresh(self, path):
         """Replace the cached information for the file located at path
         with fresh information from the filesystem.
         If the file is a directory, this is not guaranteed to refresh
         all the information for its contents; to force an entire
-        directory tree to be refreshed, use forceRefresh().
+        directory tree to be refreshed, use force_refresh().
 
         :param path: The path of the file to refresh information for.
         :type path: pathlib.Path
         """
         if path.exists():
-            self.__cache[path] = FileInfo(
+            self._cache[path] = FileInfo(
                 path = path,
                 is_dir = path.is_dir(),
                 mtime = path.stat().st_mtime_ns,
                 file_hash = self.get_fresh_hash(path))
         else:
-            del self.__cache[path]
+            del self._cache[path]
 
 
     def force_refresh(self, path):
@@ -111,7 +111,7 @@ class LocalFileInfoBrowser:
         if path.is_dir():
             for f_path in path.iterdir():
                 self.force_refresh(f_path)
-        self.__shallow_refresh(path)
+        self._shallow_refresh(path)
 
 
     def get_info(self, path):
@@ -124,8 +124,8 @@ class LocalFileInfoBrowser:
         :rtype: FileInfo
         """
         if self.is_possibly_changed(path):
-            self.__shallow_refresh(path)
-        return self.__cache.get(path)
+            self._shallow_refresh(path)
+        return self._cache.get(path)
 
 
     def list_info(self, path):

@@ -46,6 +46,10 @@ class FileInfo:
         self.mtime = mtime
 
     def __repr__(self):
+        """__repr__ for FileInfo
+        :returns: a readable representation containing all important fields
+        :rtype: string
+        """
         return '<FileInfo: path=\'{}\' hash={} is_dir={} mtime={}>'\
             .format(
                 self.path,
