@@ -15,7 +15,7 @@ class LocalFileInfoBrowser:
     """Handles requests for information about local files.
     """
     # Note that there is a cycle between
-    #   getFreshHash, listInfo, getInfo, and forceRefresh
+    #   get_fresh_hash, list_info, get_info, and force_refresh
     # when getting the hash of a directory.
     # This is because we determine the hash of a directory
     # from the hashes of its contents, and we want to get
@@ -25,7 +25,7 @@ class LocalFileInfoBrowser:
     # still left in the cache until one of the refresh methods
     # is called with that specific path, or until refreshAll() is called.
     # This should not be a problem, since
-    # a) isPossiblyChanged() will be true for a deleted file,
+    # a) is_possibly_changed() will be true for a deleted file,
     #     so deleted files _will_ be refreshed when needed.
     # b) listings of directory contents are not cached,
     #     so deleted files will _not_ be included by mistake.
