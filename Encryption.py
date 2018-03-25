@@ -1,30 +1,71 @@
+"""Encryption and decryption handling for all data sent/received.
+:Authors:
+    Jake Geers
+    Chris van Zomeren
+    Noah Verdeyen
+    Colton
+
+:Date: 2018-03-07
+
+:Version: 1.5
+"""
 import rncryptor  # https://github.com/RNCryptor/RNCryptor-python
 
 
+class EncryptError(Exception):
+    """Raised when anything goes wrong with encryption process"""
+
+
+class DecryptError(Exception):
+    """Raised when anything goes wrong with decryption process"""
+
+
 class Encryption:
-    """
-    Main class to handel byte encrypting as well as decrypting using RSA.
-    Class creates two keys:
-        Public Key - key sent over wire
-        Private Key - key kept
+    """Class that implements cryptographic Password Based Key
+    Derivation Function 2 as used in RNCryptor. Function utilizes
+    a key to encrypt data + salt.The key is then used for decryption.
     """
 
     def __init__(self, data, password):
+        """Initialize an instance of Encryption
+        :param data: The data to encrypt or decrypt
+        :type data: str
+
+        :param password: The passsword key to encrypt or decrypt data
+        :type password: str
+        """
         self._data = data
         self._password = password
 
     def encrypt(self):
+        """Encrypt the data using PBKDF2 + salt function.
+
+        :return: The encrypted data
+        :rtype: hash
+        """
+        if not isinstance(self.data, str) or not isinstance(self.password, str):
+            raise EncryptError("Error: Encrypt param must be string")  # TODO: handle
+
         cryptor = rncryptor.RNCryptor()
         encrypted_data = cryptor.encrypt(self.data, self.password)
         self.data = encrypted_data
+
         return self.data
 
     def decrypt(self):
+        """Decrypt the hashed data using password
+
+        :return: The decrypted data
+        :rtype: str
+        """
+        if not isinstance(self.password, str):
+            raise DecryptError("Error: Decrypt password must be string")  # TODO: handle
+
         cryptor = rncryptor.RNCryptor()
         decrypted_data = cryptor.decrypt(self.data, self._password)
         self.data = decrypted_data
-        return self.data
 
+        return self.data
 
     @property
     def data(self):
@@ -47,8 +88,24 @@ class Encryption:
         self._password = new_pass
 
 
-msg = "hello"
-passkey = "jimmy"
+############ temp testing #################
+
+class Student(object):
+    name = "sam"
+    age = 0
+
+
+def make_student(name, age):
+    student = Student()
+    student.name = name
+    student.age = age
+    return student
+
+
+s = make_student("jill", 24)
+
+msg = ""
+passkey = ""
 enc = Encryption(msg, passkey)
 e_data = enc.encrypt()
 print(e_data)
