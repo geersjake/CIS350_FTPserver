@@ -1,12 +1,11 @@
+
 """Encryption and decryption handling for all data sent/received.
 :Authors:
     Jake Geers
     Chris van Zomeren
     Noah Verdeyen
     Colton
-
 :Date: 2018-03-07
-
 :Version: 1.5
 """
 import rncryptor  # https://github.com/RNCryptor/RNCryptor-python
@@ -30,7 +29,6 @@ class Encryption:
         """Initialize an instance of Encryption
         :param data: The data to encrypt or decrypt
         :type data: str
-
         :param password: The password key to encrypt or decrypt data
         :type password: str
         """
@@ -39,7 +37,6 @@ class Encryption:
 
     def encrypt(self):
         """Encrypt the data using PBKDF2 + salt function.
-
         :return: The encrypted data
         :rtype: hash
         """
@@ -54,7 +51,6 @@ class Encryption:
 
     def decrypt(self):
         """Decrypt the hashed data using password
-
         :return: The decrypted data
         :rtype: str
         """
@@ -89,12 +85,12 @@ class Encryption:
 
 
 ############ temp testing #################
-
-
-msg = ""
-passkey = ""
-enc = Encryption(msg, passkey)
-e_data = enc.encrypt()
-print(e_data)
-d_data = enc.decrypt()
-print(d_data)
+        #
+        #
+        # msg = ""
+        # passkey = ""
+        # enc = Encryption(msg, passkey)
+        # e_data = enc.encrypt()
+        # print(e_data)
+        # d_data = enc.decrypt()
+        # print(d_data)
