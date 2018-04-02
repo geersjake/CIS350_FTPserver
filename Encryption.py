@@ -1,22 +1,21 @@
-
 """Encryption and decryption handling for all data sent/received.
 :Authors:
     Jake Geers
     Chris van Zomeren
     Noah Verdeyen
     Colton
-:Date: 2018-03-07
-:Version: 1.5
+:Date: 2018-04-01
+:Version: 2.0
 """
 import rncryptor  # https://github.com/RNCryptor/RNCryptor-python
 
 
-class EncryptError(Exception):
-    """Raised when anything goes wrong with encryption process"""
+class PasswordError(Exception):
+    """Raised when password is improper or invalid"""
 
 
-class DecryptError(Exception):
-    """Raised when anything goes wrong with decryption process"""
+class DataError(Exception):
+    """Raised when data is improper or invalid"""
 
 
 class Encryption:
@@ -25,6 +24,7 @@ class Encryption:
     a key to encrypt data + salt.The key is then used for decryption.
     """
 
+    # TODO: where to say function raises my exceptions?
     def __init__(self, data, password):
         """Initialize an instance of Encryption
         :param data: The data to encrypt or decrypt
@@ -32,6 +32,12 @@ class Encryption:
         :param password: The password key to encrypt or decrypt data
         :type password: str
         """
+        if not isinstance(data, str):
+            raise DataError("Error: Data param must be string")  # TODO: handle
+
+        if not isinstance(password, str):
+            raise PasswordError("Error: Password must be string")  # TODO: handle
+
         self._data = data
         self._password = password
 
@@ -40,9 +46,6 @@ class Encryption:
         :return: The encrypted data
         :rtype: hash
         """
-        if not isinstance(self.data, str) or not isinstance(self.password, str):
-            raise EncryptError("Error: Encrypt param must be string")  # TODO: handle
-
         cryptor = rncryptor.RNCryptor()
         encrypted_data = cryptor.encrypt(self.data, self.password)
         self.data = encrypted_data
@@ -54,9 +57,6 @@ class Encryption:
         :return: The decrypted data
         :rtype: str
         """
-        if not isinstance(self.password, str):
-            raise DecryptError("Error: Decrypt password must be string")  # TODO: handle
-
         cryptor = rncryptor.RNCryptor()
         decrypted_data = cryptor.decrypt(self.data, self._password)
         self.data = decrypted_data
@@ -82,15 +82,3 @@ class Encryption:
     def password(self, new_pass):
         """Setter"""
         self._password = new_pass
-
-
-############ temp testing #################
-        #
-        #
-        # msg = ""
-        # passkey = ""
-        # enc = Encryption(msg, passkey)
-        # e_data = enc.encrypt()
-        # print(e_data)
-        # d_data = enc.decrypt()
-        # print(d_data)
