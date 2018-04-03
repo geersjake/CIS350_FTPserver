@@ -9,7 +9,7 @@ data from the other host after the connection is established.
 import socket
 import struct            # For networky data packing
 from queue import Queue  # For the timeout stack
-from ft_error import BrokenSocketError
+from .ft_error import BrokenSocketError
 
 # Basic network unit, used for connecting and transferring data over TCP
 class FTSock:
@@ -19,6 +19,7 @@ class FTSock:
 
     def __init__(self, sock=None):
         """Initializes the ft_sock object
+
         :param sock: Socket object to use. If not provided (or None), we
         generate a new one.
         :type sock: socket.socket()
@@ -40,6 +41,7 @@ class FTSock:
     def topush(self, val):
         """Push a value to the timeout stack (basically set a timeout but keep
         track of old values so they can be restored afterwards).
+
         :param val: timeout value to set, in seconds.
         :type val: number
         """
@@ -51,6 +53,7 @@ class FTSock:
         before the last call to topush()). If the timeout stack is empty (i.e.
         there were no previous pushes that weren't popped), default to blocking
         mode.
+
         :return: The old value for timeout, in seconds.
         :rtype: number
         """
@@ -65,6 +68,7 @@ class FTSock:
     def settimeout(self, val):
         """Set the timeout, without messing with the stack (and by doing so, messing
         up the stack).
+
         :param val: timeout value to set, in seconds.
         :type val: number:
         """
@@ -72,8 +76,10 @@ class FTSock:
 
     def conclient(self, host, port):
         """Connect to host as if we are the client and they are the server.
+
         :param host: Host to connect to (usually an IP).
         :type host: string
+
         :param port: Port to connect to on host.
         :type port: number
         """
@@ -82,8 +88,10 @@ class FTSock:
     def conserver(self, host, port):
         """ Connect to host as if we are the server and they are the client (i.e.
         listen for connections from this host).
+
         :param host: Host to accept connections from (usually an IP).
         :type host: string
+
         :param port: Port to listen on.
         :type port: number
         """
@@ -103,15 +111,19 @@ class FTSock:
         """Starts a pseudo-symmetric connection by trying to connect to
         the host as a client, and if that doesn't work (i.e. there is
         no server running on the other host), start listening as a server.
+
         :param host: The host to connect to (usually an IP).
         :type host: string
+
         :param port: The port to use for the server's connection.
         :type port: string
+
         :return: A boolean representing the success (True
-        for success, False for failure), a string representing the mode
-        of connection we are in ("Client" or "Server"), and another string
-        which is either "Success", or a description of the error that
-        occurred.
+            for success, False for failure), a string representing the mode
+            of connection we are in ("Client" or "Server"), and another string
+            which is either "Success", or a description of the error that
+            occurred.
+
         :rtype: boolean, string, string
         """
 
@@ -138,13 +150,15 @@ class FTSock:
 
     def recvbytes(self, num):
         """Receives a known number of bytes from the other host.
+
         :param num: The number of bytes to receive.
         :type num: number
+
         :return: The bytes received.
         :rtype: raw string
 
         :raises BrokenSocketError: when the socket is broken before
-        we recieve the specified number of bytes.
+            we recieve the specified number of bytes.
         """
 
         chunks = []
@@ -159,11 +173,14 @@ class FTSock:
 
     def recvstruct(self, fmt):
         """Receives and unpacks a struct.
+
         :param fmt: A struct format string that describes what to receive.
         :type fmt: string
+
         :return: The unpacked struct (usually a tuple/list).
+
         :rtype: Whatever struct.unpack() returns for the format provided
-        (usually an indexable tuple/list).
+            (usually an indexable tuple/list).
         """
 
         slen = struct.calcsize(fmt)
@@ -171,6 +188,7 @@ class FTSock:
 
     def recvrstring(self):
         """Receives a string from the network sensibly (fixed-length).
+
         :return: The string received.
         :rtype: string
         """
@@ -181,11 +199,12 @@ class FTSock:
 
     def sendbytes(self, bstr):
         """Send raw bytes over the connection.
+
         :param bstr: A raw string of data to send.
         :type bstr: raw string
 
         :raises BrokenSocketError: when the socket is broken before we
-        send all of the bytes passed.
+            send all of the bytes passed.
         """
 
         num = len(bstr)
@@ -198,6 +217,7 @@ class FTSock:
 
     def sendtok(self, token):
         """Sends a token by sending its raw schar equivalent.
+
         :param token: The token to send.
         :type token: FTProto
         """
@@ -205,8 +225,10 @@ class FTSock:
 
     def sendstruct(self, fmt, *data):
         """Packs and sends data over the network as a struct.
+
         :param fmt: A struct format string describing the data packing.
         :type fmt: string
+
         :param data: Rest of data, as passed to struct.pack().
         :type data: Whatever the structure describes.
         """
@@ -214,6 +236,7 @@ class FTSock:
 
     def sendrstring(self, rstr):
         """Packs and sends a raw string sensibly.
+
         :param rstr: The raw string to send.
         :type rstr: raw string
         """

@@ -13,8 +13,11 @@ Welcome to FTPserver's documentation!
 .. autoclass:: file_info.local.LocalFileInfoBrowser
         :members:
 
-.. autoclass:: FTSock.FTSock
-        :members:
+.. automodule:: ft_conn
+		:members:
+
+..	autoclass:: ft_conn.ft_sock.FTSock
+		:members:
 
 Indices and tables
 ==================

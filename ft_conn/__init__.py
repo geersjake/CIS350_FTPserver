@@ -1,15 +1,15 @@
-"""Class to handle transfer protocol and actual data transfer. Uses
+"""Module to handle transfer protocol and actual data transfer. Uses
 ft_sock to provide network functionality.
-:Authors:
-    Colton Bates
+
+:Authors: Colton Bates
 
 :Version 0.5:
 """
 
 import enum
 from socket import timeout
-from ft_sock import FTSock
-from ft_error import UnexpectedValueError
+from .ft_sock import FTSock
+from .ft_error import UnexpectedValueError
 from file_info import FileInfo
 
 class FTProto(enum.Enum):
@@ -44,8 +44,10 @@ class FTConn:
     @staticmethod
     def __gtv(tok_val):
         """Converts a raw char to a control token.
+
         :param tok_val: The string value of some token in FTProto.
         :type tok_val: raw string (1 char length)
+
         :return: The enum equivalent of the token.
         :rtype: FTProto
         """
@@ -61,13 +63,15 @@ class FTConn:
 
     def connect(self, host, port):
         """Initializes the connection to a remote host.
+
         :param host: Host to connect to (usually an IP).
         :type host: string
+
         :param port: Port to use for the connection (only applies for server).
         :type port: number
 
         :return: The status of the connection process (either "Success" or an
-        error message).
+            error message).
         :rtype: string
         """
 
@@ -77,8 +81,9 @@ class FTConn:
     def check_for_request(self):
         """Checks the network buffer to see if there are any requests
         we need to respond to.
+
         :return: FTProto.REQ_LIST, FTProto.REQ_FILE, or FTProto.REQ_NONE.
-        If FTProto.REQ_FILE, also the filename requested, otherwise None.
+            If FTProto.REQ_FILE, also the filename requested, otherwise None.
         :rtype: FTProto, string
 
         :raises UnexpectedValueError: when we receive an invalid request.
@@ -105,6 +110,7 @@ class FTConn:
 
     def send_file(self, file_data):
         """Sends file contents to other host.
+
         :param file_data: The file contents.
         :type file_data: raw string
         """
@@ -113,8 +119,9 @@ class FTConn:
 
     def send_file_list(self, file_list):
         """Sends the file list after a request.
+
         :param file_list: The file list to send (should be recently
-        updated).
+            updated).
         :type file_list: list of FileInfo
         """
 
@@ -131,13 +138,15 @@ class FTConn:
 
     def request_file(self, filename):
         """Requests and receives a file from the other host.
+
         :param filename: The name of the file to request.
         :type filename: string
+
         :return: The contents of the file requested.
         :rtype: raw string
 
         :raises UnexpectedValueError: when the other host does
-        not respond to our request properly.
+            not respond to our request properly.
         """
 
         self.fts.sendtok(FTProto.REQ_FILE)
@@ -153,11 +162,12 @@ class FTConn:
 
     def request_file_list(self):
         """Requests and receives a file list ffrom the other host.
+
         :return: A list containing all of the file information requested.
         :rtype: list of FileInfo (sort of, ???)
 
         :raises UnexpectedValueError: when the other host does
-        not rspond to our request properly.
+            not respond to our request properly.
         """
 
         file_list = []
