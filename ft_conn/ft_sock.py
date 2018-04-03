@@ -7,80 +7,9 @@ data from the other host after the connection is established.
 """
 
 import socket
-import struct # For networky data packing
-import queue  # For the timeout stack
-import ssl
-
-class FTProto:
-    """Internally used to define control tokens for data transmission.
-    Technically this could be an enum or a struct or something, but this
-    is slightly easier and works best.
-    """
-
-    # 	Ready to send data, followed by a ulong each of message
-    # length and a uid sent with READY_RECV and ACKNOWLEDGE
-    READY_SEND = b'S'
-
-    # 	Ready for receive data, followed by a ulong each of
-    # message length and uid (for confirmation)
-    READY_RECV = b'R'
-
-    # An error occured, resend last message (including command)
-    ERR_RESEND = b'E'
-
-    # An error occured, cancel the current transaction (usually restarted)
-    ERR_CANCEL = b'C'
-
-    # Sent to request an ACK from the destination of data
-    # followed by uid
-    REQUEST_AK = b'K'
-
-    # Sent after a message is successful, or it is requested
-    # followed by uid
-    ACKNOWLEDG = b'A'
-
-    # Sent preceding actual data
-    DATA_SEND = b'D'
-
-class UnexpectedValueError(RuntimeError):
-    """Raised when we receive something we did not expect according to the
-    protocol specifications.
-    """
-
-    def __init__(self, state, value):
-        """:param state: Identifies the state we were in (and hence what we were
-        expecting).
-        :type state: string
-        :param value: The data we got instead of what we were expecting.
-        :type value: string
-        """
-        super().__init__()
-        self.state = state
-        self.value = value
-
-    def __repr__(self):
-        """:return: The human-readable construction of the error.
-        :rtype: string
-        """
-        return "UnexpectedValueError('" + self.state + "', '" + self.value + "'')"
-
-    def __str__(self):
-        """:return: The string representation of the error (as would be printed,
-        etc.).
-        :rtype: string
-        """
-        return "in " + self.state + ", but got " + self.value
-
-class BrokenSocketError(RuntimeError):
-    """Raised when the socket connection is broken unexpectedly.
-    """
-
-    def __str__(self):
-        """:return: The string representation of the error (as would be printed,
-        etc.).
-        :rtype: string
-        """
-        return "Socket broken unexpectedly"
+import struct            # For networky data packing
+from queue import Queue  # For the timeout stack
+from ft_error import BrokenSocketError
 
 # Basic network unit, used for connecting and transferring data over TCP
 class FTSock:
@@ -104,7 +33,7 @@ class FTSock:
             self.sock = sock
 
         # Initialize timeout stack
-        self.tostack = queue.Queue()
+        self.tostack = Queue()
 
     # 	These three functions allow us to quickly and easily switch between
     # timeouts
@@ -240,6 +169,16 @@ class FTSock:
         slen = struct.calcsize(fmt)
         return struct.unpack(fmt, self.recvbytes(slen))
 
+    def recvrstring(self):
+        """Receives a string from the network sensibly (fixed-length).
+        :return: The string received.
+        :rtype: string
+        """
+
+        length = self.recvstruct('!i')[0]
+        rstr = self.recvstruct('!{}s'.format(length))[0]
+        return rstr
+
     def sendbytes(self, bstr):
         """Send raw bytes over the connection.
         :param bstr: A raw string of data to send.
@@ -256,3 +195,27 @@ class FTSock:
             if sent == 0:
                 raise BrokenSocketError()
             totalsent = totalsent + sent
+
+    def sendtok(self, token):
+        """Sends a token by sending its raw schar equivalent.
+        :param token: The token to send.
+        :type token: FTProto
+        """
+        self.sendbytes(token.value)
+
+    def sendstruct(self, fmt, *data):
+        """Packs and sends data over the network as a struct.
+        :param fmt: A struct format string describing the data packing.
+        :type fmt: string
+        :param data: Rest of data, as passed to struct.pack().
+        :type data: Whatever the structure describes.
+        """
+        self.sendbytes(struct.pack(fmt, *data))
+
+    def sendrstring(self, rstr):
+        """Packs and sends a raw string sensibly.
+        :param rstr: The raw string to send.
+        :type rstr: raw string
+        """
+
+        self.sendstruct('!i{}s'.format(len(rstr)), len(rstr), rstr)
