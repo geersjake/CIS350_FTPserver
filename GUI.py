@@ -1,11 +1,11 @@
 from tkinter import *
 from tkinter import filedialog
-import encryption
+import encryption # from encryption import Encryption
 
 
 class Application(Frame):
     def __init__(self, master=None):
-        super().__init__(master)
+        super().__init__(master) # self.en = Encryption("defaultData", "defaultPassword")
         self.pack()
         self.create_widgets()
 
@@ -33,12 +33,12 @@ class Application(Frame):
 
     def encryptfile(self):
         filename = filedialog.askopenfilename(filetypes=(("HTML files", "*.html;*.htm"), ("All files", "*.*")))
-        encryption.Encryption.encrypt(filename)
+        encryption.Encryption.encrypt(filename)  # shouldnt encrypt filename... should be self.en.encrypt(dataToEncrypt, password)
         print("Your file " + filename + " has been encrypted and can be sent")
 
     def decryptfile(self):
         filename = filedialog.askopenfilename(filetypes=(("HTML files", "*.html;*.htm"), ("All files", "*.*")))
-        encryption.Encryption.decrypt(filename)
+        encryption.Encryption.decrypt(filename) #  same as above
         print("Your file " + filename + " has been decrypted and can be viewed")
 
 
