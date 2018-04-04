@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import filedialog
-import Encryption as en
+import encryption
 
 
 class Application(Frame):
@@ -10,29 +10,36 @@ class Application(Frame):
         self.create_widgets()
 
     def create_widgets(self):
+        # For the text box to input IP Address
+        e = Entry(self)
+        e.pack()
+        e.delete(0, END)
+
+        # Encryption Button
         self.encrypt = Button(self)
         self.encrypt["text"] = "Encrypt file to export"
         self.encrypt["command"] = self.encryptfile
         self.encrypt.pack(side="left")
 
+        # Decryption Button
         self.decrypt = Button(self)
         self.decrypt["text"] = "Decrypt a chosen file"
         self.decrypt["command"] = self.decryptfile
         self.decrypt.pack(side="right")
 
-        self.quit = Button(self, text="QUIT", fg="red",
-                           command=root.destroy)
+        # Quit Program
+        self.quit = Button(self, text="QUIT", fg="red",command=root.destroy)
         self.quit.pack(side="bottom")
 
     def encryptfile(self):
-        fileName = filedialog.askopenfilename(filetypes=(("HTML files", "*.html;*.htm"), ("All files", "*.*")))
-        en.encrypt(fileName)
-        print("Your file " + fileName + " has been encrypted and can be sent")
+        filename = filedialog.askopenfilename(filetypes=(("HTML files", "*.html;*.htm"), ("All files", "*.*")))
+        encryption.Encryption.encrypt(filename)
+        print("Your file " + filename + " has been encrypted and can be sent")
 
     def decryptfile(self):
-        fileName = filedialog.askopenfilename(filetypes=(("HTML files", "*.html;*.htm"), ("All files", "*.*")))
-        en.decrypt(fileName)
-        print("Your file " + fileName + " has been decrypted and can be viewed")
+        filename = filedialog.askopenfilename(filetypes=(("HTML files", "*.html;*.htm"), ("All files", "*.*")))
+        encryption.Encryption.decrypt(filename)
+        print("Your file " + filename + " has been decrypted and can be viewed")
 
 
 root = Tk()

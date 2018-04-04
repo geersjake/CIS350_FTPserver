@@ -9,9 +9,9 @@
 """
 import unittest
 
-from Encryption import PasswordError
-from Encryption import DataError
-from Encryption import Encryption
+from encryption import PasswordError
+from encryption import DataError
+from encryption import Encryption
 
 
 class TestPasswordMethods(unittest.TestCase):

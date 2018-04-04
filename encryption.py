@@ -82,3 +82,4 @@ class Encryption:
     def password(self, new_pass):
         """Setter"""
         self._password = new_pass
+
