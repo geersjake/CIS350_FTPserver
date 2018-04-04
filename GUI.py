@@ -33,7 +33,7 @@ class Application(Frame):
 
     def encryptfile(self):
         filename = filedialog.askopenfilename(filetypes=(("HTML files", "*.html;*.htm"), ("All files", "*.*")))
-        encryption.Encryption.encrypt(filename)  # shouldnt encrypt filename... should be self.en.encrypt(dataToEncrypt, password)
+        encryption.Encryption.encrypt(filename)  # shouldnt encrypt filename... should be self.en.encrypt() no param, set param via self.en.data = blah
         print("Your file " + filename + " has been encrypted and can be sent")
 
     def decryptfile(self):

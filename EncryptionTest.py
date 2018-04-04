@@ -21,8 +21,6 @@ class TestPasswordMethods(unittest.TestCase):
         self.enc = Encryption("defaultD", "defaultP")
         self.passError = PasswordError
 
-    # def tearDown(self): #  something here?
-
     def test_get(self):
         self.assertEqual(self.enc.password, "defaultP")
 
@@ -49,8 +47,6 @@ class TestDataMethods(unittest.TestCase):
         self.enc = Encryption("defaultD", "defaultP")
         self.dataError = DataError
 
-    # def tearDown(self): #  something here?
-
     def test_get(self):
         self.assertEqual(self.enc.data, "defaultD")
 
@@ -76,12 +72,17 @@ class TestEncryptMethod(unittest.TestCase):
     def setUp(self):
         self.enc = Encryption("defaultD", "defaultP")
 
-    # def tearDown(self): # something here?
-
-    def test_encrypt(self):
+    def test_encrypt0(self):
         self.enc.encrypt()
         d_data = self.enc.decrypt()
         self.assertEqual(self.enc.data, d_data)
+
+    def test_encrypt1(self):
+        self.enc.data = "HELLO RED BULL ALL DAY IPA"
+        self.enc.password = "fee fi fo"
+        hash1 = self.enc.encrypt()
+
+
 
 
 class TestDecryptMethod(unittest.TestCase):
