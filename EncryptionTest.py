@@ -77,12 +77,15 @@ class TestEncryptMethod(unittest.TestCase):
         d_data = self.enc.decrypt()
         self.assertEqual(self.enc.data, d_data)
 
+    """ Test salt is not same """
     def test_encrypt1(self):
-        self.enc.data = "HELLO RED BULL ALL DAY IPA"
-        self.enc.password = "fee fi fo"
+        self.enc1 = Encryption("HELLO RED BULL ALL DAY IPA", "fee fi fo")
         hash1 = self.enc.encrypt()
 
+        self.enc2 = Encryption("HELLO RED BULL ALL DAY IPA", "fee fi fo")
+        hash2 = self.enc2.encrypt()
 
+        self.assertNotEqual(hash1, hash2)
 
 
 class TestDecryptMethod(unittest.TestCase):
@@ -98,3 +101,11 @@ class TestDecryptMethod(unittest.TestCase):
         self.enc.encrypt()
         d_data = self.enc.decrypt()
         self.assertEqual(self.enc.data, d_data)
+
+
+class TestSecurity(unittest.TestCase):
+    """Testing to ensure password can not easily be brute forced
+    """
+
+    def test_brute(self):
+        self.enc = Encryption("secret message", "1234")
