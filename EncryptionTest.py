@@ -9,9 +9,9 @@
 """
 import unittest
 
-from Encryption import PasswordError
-from Encryption import DataError
-from Encryption import Encryption
+from encryption import PasswordError
+from encryption import DataError
+from encryption import Encryption
 
 
 class TestPasswordMethods(unittest.TestCase):
@@ -20,8 +20,6 @@ class TestPasswordMethods(unittest.TestCase):
     def setUp(self):
         self.enc = Encryption("defaultD", "defaultP")
         self.passError = PasswordError
-
-    # def tearDown(self): #  something here?
 
     def test_get(self):
         self.assertEqual(self.enc.password, "defaultP")
@@ -49,8 +47,6 @@ class TestDataMethods(unittest.TestCase):
         self.enc = Encryption("defaultD", "defaultP")
         self.dataError = DataError
 
-    # def tearDown(self): #  something here?
-
     def test_get(self):
         self.assertEqual(self.enc.data, "defaultD")
 
@@ -76,12 +72,20 @@ class TestEncryptMethod(unittest.TestCase):
     def setUp(self):
         self.enc = Encryption("defaultD", "defaultP")
 
-    # def tearDown(self): # something here?
-
-    def test_encrypt(self):
+    def test_encrypt0(self):
         self.enc.encrypt()
         d_data = self.enc.decrypt()
         self.assertEqual(self.enc.data, d_data)
+
+    """ Test salt is not same """
+    def test_encrypt1(self):
+        self.enc1 = Encryption("HELLO RED BULL ALL DAY IPA", "fee fi fo")
+        hash1 = self.enc.encrypt()
+
+        self.enc2 = Encryption("HELLO RED BULL ALL DAY IPA", "fee fi fo")
+        hash2 = self.enc2.encrypt()
+
+        self.assertNotEqual(hash1, hash2)
 
 
 class TestDecryptMethod(unittest.TestCase):
@@ -97,3 +101,11 @@ class TestDecryptMethod(unittest.TestCase):
         self.enc.encrypt()
         d_data = self.enc.decrypt()
         self.assertEqual(self.enc.data, d_data)
+
+
+class TestSecurity(unittest.TestCase):
+    """Testing to ensure password can not easily be brute forced
+    """
+
+    def test_brute(self):
+        self.enc = Encryption("secret message", "1234")
