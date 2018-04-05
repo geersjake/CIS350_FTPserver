@@ -8,9 +8,9 @@ ft_sock to provide network functionality.
 
 import enum
 from socket import timeout
+from file_info import FileInfo
 from .ft_sock import FTSock
 from .ft_error import UnexpectedValueError
-from file_info import FileInfo
 
 class FTProto(enum.Enum):
     """Internally used to define control tokens for data transmission.
@@ -88,14 +88,15 @@ class FTConn:
 
         :raises UnexpectedValueError: when we receive an invalid request.
         """
-        self.fts.topush(0.1)
+
+        self.fts.timeout_push(0.1)
 
         try:
-            reqr = self.fts.recvbytes(1)
+            reqr = self.fts.recv_bytes(1)
         except timeout:
             reqr = None
         finally:
-            self.fts.topop()
+            self.fts.timeout_pop()
 
         req = self.__gtv(reqr)
         fname = None
@@ -104,7 +105,7 @@ class FTConn:
             raise UnexpectedValueError('Request', reqr.decode())
 
         if req == FTProto.REQ_FILE:
-            fname = self.fts.recvrstring().decode()
+            fname = self.fts.recv_rstring().decode()
 
         return req, fname
 
@@ -114,8 +115,9 @@ class FTConn:
         :param file_data: The file contents.
         :type file_data: raw string
         """
-        self.fts.sendtok(FTProto.RES_FILE)
-        self.fts.sendrstring(file_data)
+
+        self.fts.send_tok(FTProto.RES_FILE)
+        self.fts.send_rstring(file_data)
 
     def send_file_list(self, file_list):
         """Sends the file list after a request.
@@ -125,16 +127,16 @@ class FTConn:
         :type file_list: list of FileInfo
         """
 
-        self.fts.sendtok(FTProto.RES_LIST)
+        self.fts.send_tok(FTProto.RES_LIST)
 
         list_length = len(file_list)
-        self.fts.sendstruct('!i', list_length)
+        self.fts.send_struct('!i', list_length)
 
         for file_info in file_list:
-            self.fts.sendrstring(str(file_info.path).encode())
-            self.fts.sendstruct('!32s?i', file_info.hash.digest(),
-                                file_info.is_dir,
-                                file_info.mtime)
+            self.fts.send_rstring(str(file_info.path).encode())
+            self.fts.send_struct('!32s?i', file_info.hash.digest(),
+                                 file_info.is_dir,
+                                 file_info.mtime)
 
     def request_file(self, filename):
         """Requests and receives a file from the other host.
@@ -149,16 +151,16 @@ class FTConn:
             not respond to our request properly.
         """
 
-        self.fts.sendtok(FTProto.REQ_FILE)
-        self.fts.sendrstring(filename.encode())
+        self.fts.send_tok(FTProto.REQ_FILE)
+        self.fts.send_rstring(filename.encode())
 
-        tokr = self.fts.recvbytes(1)
+        tokr = self.fts.recv_bytes(1)
         tok = self.__gtv(tokr)
 
         if tok != FTProto.RES_FILE:
             raise UnexpectedValueError('File response', tokr.decode())
 
-        return self.fts.recvrstring()
+        return self.fts.recv_rstring()
 
     def request_file_list(self):
         """Requests and receives a file list ffrom the other host.
@@ -172,19 +174,19 @@ class FTConn:
 
         file_list = []
 
-        self.fts.sendtok(FTProto.REQ_LIST)
+        self.fts.send_tok(FTProto.REQ_LIST)
 
-        tokr = self.fts.recvbytes(1)
+        tokr = self.fts.recv_bytes(1)
         tok = self.__gtv(tokr)
 
         if tok != FTProto.RES_LIST:
             raise UnexpectedValueError('File list response', tokr.decode())
 
-        list_len = self.fts.recvstruct('!i')[0]
+        list_len = self.fts.recv_struct('!i')[0]
 
         for _ in range(list_len):
-            path = self.fts.recvrstring().decode()
-            (hashd, is_dir, mtime) = self.fts.recvstruct('!32s?i')
+            path = self.fts.recv_rstring().decode()
+            (hashd, is_dir, mtime) = self.fts.recv_struct('!32s?i')
 
             # TODO: Make this a real FileInfo? It has a hash digest where the hash should be.
 

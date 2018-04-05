@@ -17,6 +17,7 @@ class UnexpectedValueError(RuntimeError):
         :param value: The data we got instead of what we were expecting.
         :type value: string
         """
+
         super().__init__()
         self.state = state
         self.value = value
@@ -25,6 +26,7 @@ class UnexpectedValueError(RuntimeError):
         """:return: The human-readable construction of the error.
         :rtype: string
         """
+
         return "UnexpectedValueError('" + self.state + "', '" + self.value + "'')"
 
     def __str__(self):
@@ -32,6 +34,7 @@ class UnexpectedValueError(RuntimeError):
         etc.).
         :rtype: string
         """
+
         return "in " + self.state + ", but got " + self.value
 
 class BrokenSocketError(RuntimeError):
@@ -43,4 +46,5 @@ class BrokenSocketError(RuntimeError):
         etc.).
         :rtype: string
         """
+
         return "Socket broken unexpectedly"

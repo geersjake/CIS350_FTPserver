@@ -24,6 +24,7 @@ class FTSock:
         generate a new one.
         :type sock: socket.socket()
         """
+
         if sock is None:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -34,47 +35,50 @@ class FTSock:
             self.sock = sock
 
         # Initialize timeout stack
-        self.tostack = Queue()
+        self.timeout_stack = Queue()
 
     # 	These three functions allow us to quickly and easily switch between
     # timeouts
-    def topush(self, val):
+    def timeout_push(self, val):
         """Push a value to the timeout stack (basically set a timeout but keep
         track of old values so they can be restored afterwards).
 
         :param val: timeout value to set, in seconds.
         :type val: number
         """
-        self.tostack.put(self.sock.gettimeout())
+
+        self.timeout_stack.put(self.sock.gettimeout())
         self.sock.settimeout(val)
 
-    def topop(self):
+    def timeout_pop(self):
         """Pop a value from the timeout stack (basically restore a timeout to
-        before the last call to topush()). If the timeout stack is empty (i.e.
+        before the last call to timeout_push()). If the timeout stack is empty (i.e.
         there were no previous pushes that weren't popped), default to blocking
         mode.
 
         :return: The old value for timeout, in seconds.
         :rtype: number
         """
+
         oldtimeout = self.sock.gettimeout()
 
         # If the queue is empty, default to None (blocking mode) (shouldn't happen)
-        newtimeout = None if self.tostack.empty() else self.tostack.get()
+        newtimeout = None if self.timeout_stack.empty() else self.timeout_stack.get()
 
         self.sock.settimeout(newtimeout)
         return oldtimeout
 
-    def settimeout(self, val):
+    def timeout_set(self, val):
         """Set the timeout, without messing with the stack (and by doing so, messing
         up the stack).
 
         :param val: timeout value to set, in seconds.
-        :type val: number:
+        :type val: number
         """
+
         self.sock.settimeout(val)
 
-    def conclient(self, host, port):
+    def __connect_client(self, host, port):
         """Connect to host as if we are the client and they are the server.
 
         :param host: Host to connect to (usually an IP).
@@ -83,9 +87,10 @@ class FTSock:
         :param port: Port to connect to on host.
         :type port: number
         """
+
         self.sock.connect((host, port))
 
-    def conserver(self, host, port):
+    def __connect_server(self, host, port):
         """ Connect to host as if we are the server and they are the client (i.e.
         listen for connections from this host).
 
@@ -95,15 +100,16 @@ class FTSock:
         :param port: Port to listen on.
         :type port: number
         """
+
         self.sock.bind(("", port))
         conn, addr = "", ""
 
         # Reject connections until the host matches (within 5m)
-        self.topush(480)
+        self.timeout_push(480)
         while addr != host:
             self.sock.listen(1)
             conn, (addr, port) = self.sock.accept()
-        self.topop()
+        self.timeout_pop()
 
         self.sock = conn
 
@@ -128,14 +134,14 @@ class FTSock:
         """
 
         try: # Connecting as client -> server
-            self.conclient(host, port)
+            self.__connect_client(host, port)
 
         # This is the error that we will get if there is no server
         # 	running on the other host
         except ConnectionRefusedError:
 
             try: # Connecting as server <- client
-                self.conserver(host, port)
+                self.__connect_server(host, port)
             except socket.error as smsg:
                 print("s", smsg)
                 return False, "Server", smsg
@@ -148,7 +154,7 @@ class FTSock:
 
         return True, "Client", "Success"
 
-    def recvbytes(self, num):
+    def recv_bytes(self, num):
         """Receives a known number of bytes from the other host.
 
         :param num: The number of bytes to receive.
@@ -171,7 +177,7 @@ class FTSock:
             totalrecvd = totalrecvd + len(chunk)
         return b''.join(chunks)
 
-    def recvstruct(self, fmt):
+    def recv_struct(self, fmt):
         """Receives and unpacks a struct.
 
         :param fmt: A struct format string that describes what to receive.
@@ -184,20 +190,20 @@ class FTSock:
         """
 
         slen = struct.calcsize(fmt)
-        return struct.unpack(fmt, self.recvbytes(slen))
+        return struct.unpack(fmt, self.recv_bytes(slen))
 
-    def recvrstring(self):
+    def recv_rstring(self):
         """Receives a string from the network sensibly (fixed-length).
 
         :return: The string received.
         :rtype: string
         """
 
-        length = self.recvstruct('!i')[0]
-        rstr = self.recvstruct('!{}s'.format(length))[0]
+        length = self.recv_struct('!i')[0]
+        rstr = self.recv_struct('!{}s'.format(length))[0]
         return rstr
 
-    def sendbytes(self, bstr):
+    def send_bytes(self, bstr):
         """Send raw bytes over the connection.
 
         :param bstr: A raw string of data to send.
@@ -215,30 +221,32 @@ class FTSock:
                 raise BrokenSocketError()
             totalsent = totalsent + sent
 
-    def sendtok(self, token):
+    def send_tok(self, token):
         """Sends a token by sending its raw schar equivalent.
 
         :param token: The token to send.
         :type token: FTProto
         """
-        self.sendbytes(token.value)
 
-    def sendstruct(self, fmt, *data):
+        self.send_bytes(token.value)
+
+    def send_struct(self, fmt, *data):
         """Packs and sends data over the network as a struct.
 
         :param fmt: A struct format string describing the data packing.
         :type fmt: string
 
         :param data: Rest of data, as passed to struct.pack().
-        :type data: Whatever the structure describes.
+        :type data: whatever the structure describes
         """
-        self.sendbytes(struct.pack(fmt, *data))
 
-    def sendrstring(self, rstr):
+        self.send_bytes(struct.pack(fmt, *data))
+
+    def send_rstring(self, rstr):
         """Packs and sends a raw string sensibly.
 
         :param rstr: The raw string to send.
         :type rstr: raw string
         """
 
-        self.sendstruct('!i{}s'.format(len(rstr)), len(rstr), rstr)
+        self.send_struct('!i{}s'.format(len(rstr)), len(rstr), rstr)
