@@ -56,7 +56,7 @@ class LocalFileInfoBrowser:
         (possibly cached) hashes of the directory contents.
 
         :param path: The path of the file to hash.
-        :type path: Path
+        :type path: pathlib.Path
 
         :raises UnrecognizedSpecialFile: given a path that is not a regular file or directory.
 
@@ -83,7 +83,7 @@ class LocalFileInfoBrowser:
         have changed.
 
         :param path: The path of the file to check for changes.
-        :type path: Path
+        :type path: pathlib.Path
 
         :returns: Whether the file at path has possibly changed.
         :rtype: boolean
