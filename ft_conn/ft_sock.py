@@ -17,8 +17,12 @@ class FTSock:
     arbitrary message sending."""
 
 
-    def __init__(self, sock=None):
+    def __init__(self, test=False, sock=None):
         """Initializes the ft_sock object
+
+        :param test: If True, allows sockets to be reused quickly, which
+            makes testing much faster
+        :type test: boolean
 
         :param sock: Socket object to use. If not provided (or None), we
         generate a new one.
@@ -27,12 +31,11 @@ class FTSock:
 
         if sock is None:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-            # 	TODO: Remove this, it does stuff to make testing work easier
-            # (And could cause problems)
-            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         else:
             self.sock = sock
+
+        if test:
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         # Initialize timeout stack
         self.timeout_stack = Queue()
@@ -106,9 +109,15 @@ class FTSock:
 
         # Reject connections until the host matches (within 5m)
         self.timeout_push(480)
-        while addr != host:
+        while True:
             self.sock.listen(1)
             conn, (addr, port) = self.sock.accept()
+
+            if addr == host:
+                break
+            else:
+                conn.close()
+
         self.timeout_pop()
 
         self.sock = conn
@@ -203,6 +212,15 @@ class FTSock:
         rstr = self.recv_struct('!{}s'.format(length))[0]
         return rstr
 
+    def recv_int(self):
+        """Receives an integer from the network.
+
+        :return: The integer received.
+        :rtype: integer
+        """
+
+        return self.recv_struct('!i')[0]
+
     def send_bytes(self, bstr):
         """Send raw bytes over the connection.
 
@@ -250,3 +268,12 @@ class FTSock:
         """
 
         self.send_struct('!i{}s'.format(len(rstr)), len(rstr), rstr)
+
+    def send_int(self, num):
+        """Sends an integer over the network.
+
+        :param num: The integer to send.
+        :type num: integer
+        """
+
+        self.send_struct('!i', num)

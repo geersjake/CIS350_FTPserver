@@ -38,6 +38,14 @@ class FTConn:
     """Provides useful network functionality to be called by the UI.
     """
 
+    # Keeps track of network versions. This is sent during the handshake,
+    # to ensure compatibility
+    _network_version = 1
+
+    # Sent as handshake to make sure the other host is actually running
+    # the program (response is it reversed). Must be 8 chars.
+    _handshake_string = b'FTProtoW'
+
     def __init__(self):
         self.fts = FTSock()
 
@@ -60,6 +68,78 @@ class FTConn:
 
         return reqtoks[0]
 
+    def __expect_tok(self, toktuple):
+        """Receives a token and ensures that it was one that we expected.
+
+        :param toktuple: A tuple containing every possible token that we
+            expect.
+        :type toktuple: tuple of FTProto
+
+        :return: The token we actually received.
+        :rtype: FTProto
+
+        :raises UnexpectedValueError: when we receive a token we were not
+            expecting.
+        """
+
+        try:
+            tokr = self.fts.recv_bytes(1)
+        except timeout:
+            tokr = None
+
+        tok = self.__gtv(tokr)
+
+        if tok not in toktuple:
+            if tok is FTProto.REQ_NONE:
+                tokrs = "None"
+            else:
+                tokrs = tokr.decode()
+
+            raise UnexpectedValueError(str(toktuple), tokrs)
+
+        return tok
+
+    def __handshake(self, mode):
+        """Conducts a handshake to ensure that the other host is running
+            the same program, with a network protocol version that is
+            compatible.
+
+        :param mode: The role we are in the connection ("Client" if we
+            connected to the other host, and "Server" if they connected
+            to us).
+        :type mode: string
+
+        :return: Whether the handshake was successful.
+        :rtype: boolean
+        """
+
+        if mode == "Client":
+            self.fts.send_bytes(self._handshake_string)
+            self.fts.send_int(self._network_version)
+
+            alt_hs = self.fts.recv_bytes(8)
+            alt_version = self.fts.recv_int()
+
+            if alt_hs != self._handshake_string[::-1] or alt_version != self._network_version:
+                return False
+
+            return True
+
+
+        elif mode == "Server":
+            alt_hs = self.fts.recv_bytes(8)
+            alt_version = self.fts.recv_int()
+
+            self.fts.send_bytes(alt_hs[::-1])
+            self.fts.send_int(self._network_version)
+
+            if alt_hs != self._handshake_string or alt_version != self._network_version:
+                return False
+
+            return True
+
+        else:
+            return False
 
     def connect(self, host, port):
         """Initializes the connection to a remote host.
@@ -75,8 +155,14 @@ class FTConn:
         :rtype: string
         """
 
-        _, _, status = self.fts.connect(host, port)
-        return status
+        connected, mode, message = self.fts.connect(host, port)
+
+        if connected:
+            self.fts.timeout_push(10)
+            if not self.__handshake(mode):
+                message = "Handshake failed."
+
+        return message
 
     def check_for_request(self):
         """Checks the network buffer to see if there are any requests
@@ -90,22 +176,13 @@ class FTConn:
         """
 
         self.fts.timeout_push(0.1)
-
-        try:
-            reqr = self.fts.recv_bytes(1)
-        except timeout:
-            reqr = None
-        finally:
-            self.fts.timeout_pop()
-
-        req = self.__gtv(reqr)
-        fname = None
-
-        if req not in (FTProto.REQ_FILE, FTProto.REQ_LIST, FTProto.REQ_NONE):
-            raise UnexpectedValueError('Request', reqr.decode())
+        req = self.__expect_tok((FTProto.REQ_FILE, FTProto.REQ_LIST, FTProto.REQ_NONE))
+        self.fts.timeout_pop()
 
         if req == FTProto.REQ_FILE:
             fname = self.fts.recv_rstring().decode()
+        else:
+            fname = None
 
         return req, fname
 
@@ -130,7 +207,7 @@ class FTConn:
         self.fts.send_tok(FTProto.RES_LIST)
 
         list_length = len(file_list)
-        self.fts.send_struct('!i', list_length)
+        self.fts.send_int(list_length)
 
         for file_info in file_list:
             self.fts.send_rstring(str(file_info.path).encode())
@@ -154,11 +231,7 @@ class FTConn:
         self.fts.send_tok(FTProto.REQ_FILE)
         self.fts.send_rstring(filename.encode())
 
-        tokr = self.fts.recv_bytes(1)
-        tok = self.__gtv(tokr)
-
-        if tok != FTProto.RES_FILE:
-            raise UnexpectedValueError('File response', tokr.decode())
+        self.__expect_tok((FTProto.RES_FILE,))
 
         return self.fts.recv_rstring()
 
@@ -176,13 +249,9 @@ class FTConn:
 
         self.fts.send_tok(FTProto.REQ_LIST)
 
-        tokr = self.fts.recv_bytes(1)
-        tok = self.__gtv(tokr)
+        self.__expect_tok(FTProto.RES_LIST)
 
-        if tok != FTProto.RES_LIST:
-            raise UnexpectedValueError('File list response', tokr.decode())
-
-        list_len = self.fts.recv_struct('!i')[0]
+        list_len = self.fts.recv_int()
 
         for _ in range(list_len):
             path = self.fts.recv_rstring().decode()
