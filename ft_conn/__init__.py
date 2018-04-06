@@ -134,7 +134,7 @@ class FTConn:
 
         for file_info in file_list:
             self.fts.send_rstring(str(file_info.path).encode())
-            self.fts.send_struct('!32s?i', file_info.hash.digest(),
+            self.fts.send_struct('!32s?i', file_info.hash,
                                  file_info.is_dir,
                                  file_info.mtime)
 
@@ -166,7 +166,7 @@ class FTConn:
         """Requests and receives a file list ffrom the other host.
 
         :return: A list containing all of the file information requested.
-        :rtype: list of FileInfo (sort of, ???)
+        :rtype: list of FileInfo
 
         :raises UnexpectedValueError: when the other host does
             not respond to our request properly.
@@ -187,8 +187,6 @@ class FTConn:
         for _ in range(list_len):
             path = self.fts.recv_rstring().decode()
             (hashd, is_dir, mtime) = self.fts.recv_struct('!32s?i')
-
-            # TODO: Make this a real FileInfo? It has a hash digest where the hash should be.
 
             file_list.append(FileInfo(path=path, file_hash=hashd, is_dir=is_dir, mtime=mtime))
 

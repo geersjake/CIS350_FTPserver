@@ -43,8 +43,8 @@ class LocalFileInfoBrowser:
         :param path: The path of the file to hash.
         :type path: Path
 
-        :returns: A hash of the file contents.
-        :rtype: hashlib.sha256
+        :returns: A SHA256 digest of the file contents.
+        :rtype: bytes
         """
         file_hash = sha256()
         if path.is_file():
@@ -52,11 +52,11 @@ class LocalFileInfoBrowser:
         elif path.is_dir():
             for info in sorted(self.list_info(path), key=lambda _: _.path.name):
                 file_hash.update(fsencode(info.path.name))
-                file_hash.update(info.hash.digest())
+                file_hash.update(info.hash)
         else:
             raise NotImplementedError()
 
-        return file_hash
+        return file_hash.digest()
 
 
     def is_possibly_changed(self, path):

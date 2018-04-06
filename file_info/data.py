@@ -30,8 +30,8 @@ class FileInfo:
             as a pathlib.Path instance.
         :type path: pathlib.Path
 
-        :param file_hash: A hash of the file's contents.
-        :type file_hash: hashlib.sha256
+        :param file_hash: A SHA256 digest of the file's contents.
+        :type file_hash: bytes
 
         :param is_dir: Whether the file is a directory.
         :type is_dir: boolean
@@ -53,7 +53,7 @@ class FileInfo:
         return '<FileInfo: path=\'{}\' hash={} is_dir={} mtime={}>'\
             .format(
                 self.path,
-                b64encode(self.hash.digest()),
+                b64encode(self.hash),
                 self.is_dir,
                 self.mtime)
 

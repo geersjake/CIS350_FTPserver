@@ -58,6 +58,11 @@ def get_mock_dir_path(name="MOCK_DIR", *, iterdir=[]):
                     is_dir=True,
                     iterdir=iterdir)
 
+def get_mock_hash():
+    return b"NOT A REAL HASH! THIS IS A TEST!" # must be 32 bytes
+    #        00000000011111111112222222222333
+    #        12345678901234567890123456789012
+
 
 
 class TestLocalFileInfoBrowser:
@@ -65,7 +70,7 @@ class TestLocalFileInfoBrowser:
     def test_get_fresh_hash__for_file(self):
         p = get_mock_file_path()
         L = LocalFileInfoBrowser()
-        assert L.get_fresh_hash(p).digest() == sha256(b"Mock contents").digest()
+        assert L.get_fresh_hash(p) == sha256(b"Mock contents").digest()
 
     def test_get_fresh_hash__for_dir(self):
         p = get_mock_dir_path(iterdir=[
@@ -77,13 +82,14 @@ class TestLocalFileInfoBrowser:
         h.update(sha256(b"with toast").digest())
         h.update(fsencode("HAM"))
         h.update(sha256(b"sandwich").digest())
-        assert L.get_fresh_hash(p).digest() == h.digest()
+        assert L.get_fresh_hash(p) == h.digest()
 
     def test_is_possibly_changed__for_updated_mtime(self):
         p = get_mock_file_path()
         L = LocalFileInfoBrowser()
         assert L.is_possibly_changed(p)
-        L._cache[p] = FileInfo(path=p, is_dir=False, mtime=0, file_hash=sha256())
+        L._cache[p]\
+            = FileInfo(path=p, is_dir=False, mtime=0, file_hash=get_mock_hash())
         assert not L.is_possibly_changed(p)
         p._stat.st_mtime_ns += 1
         assert L.is_possibly_changed(p)
@@ -94,9 +100,12 @@ class TestLocalFileInfoBrowser:
             get_mock_file_path("EGGS", b"with toast")])
         L = LocalFileInfoBrowser()
         assert L.is_possibly_changed(p)
-        L._cache[p] = FileInfo(path=p, is_dir=True, mtime=0, file_hash=sha256())
-        L._cache[p._iterdir[0]] = FileInfo(path="HAM", is_dir=False, mtime=0, file_hash=sha256())
-        L._cache[p._iterdir[1]] = FileInfo(path="EGGS", is_dir=False, mtime=0, file_hash=sha256())
+        L._cache[p]\
+            = FileInfo(path=p, is_dir=True, mtime=0, file_hash=get_mock_hash())
+        L._cache[p._iterdir[0]]\
+            = FileInfo(path="HAM", is_dir=False, mtime=0, file_hash=get_mock_hash())
+        L._cache[p._iterdir[1]]\
+            = FileInfo(path="EGGS", is_dir=False, mtime=0, file_hash=get_mock_hash())
         assert not L.is_possibly_changed(p)
         p._iterdir[1]._stat.st_mtime_ns += 1
         assert L.is_possibly_changed(p)
@@ -108,7 +117,7 @@ class TestLocalFileInfoBrowser:
         assert p in L._cache
         p._read_bytes = b"Updated"
         L._shallow_refresh(p)
-        assert L._cache[p].hash.digest() == sha256(b"Updated").digest()
+        assert L._cache[p].hash == sha256(b"Updated").digest()
         p._exists = False
         L._shallow_refresh(p)
         assert p not in L._cache
