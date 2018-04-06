@@ -11,6 +11,21 @@ from file_info import FileInfo
 
 
 
+class UnrecognizedSpecialFile(Exception):
+    """An exception raised when the file browser encounters a special file
+    (e.g. symbolic link, socket, device, etc.) that it does not know how to
+    handle.
+    """
+    def __init__(self, offending_path):
+        """:param offending_path: The path which caused this exception.
+        :type offending_path: pathlib.Path
+        """
+        self.offending_path = offending_path
+        super().__init__(
+            "Unrecognized special file '{}'".format(str(offending_path)))
+
+
+
 class LocalFileInfoBrowser:
     """Handles requests for information about local files.
     """
@@ -43,6 +58,8 @@ class LocalFileInfoBrowser:
         :param path: The path of the file to hash.
         :type path: Path
 
+        :raises UnrecognizedSpecialFile: given a path that is not a regular file or directory.
+
         :returns: A SHA256 digest of the file contents.
         :rtype: bytes
         """
@@ -54,7 +71,7 @@ class LocalFileInfoBrowser:
                 file_hash.update(fsencode(info.path.name))
                 file_hash.update(info.hash)
         else:
-            raise NotImplementedError()
+            raise UnrecognizedSpecialFile(path)
 
         return file_hash.digest()
 
