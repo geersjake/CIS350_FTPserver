@@ -2,8 +2,6 @@
 data from the other host after the connection is established.
 :Authors:
     Colton Bates
-
-:Version 0.5
 """
 
 import socket
@@ -81,6 +79,15 @@ class FTSock:
 
         self.sock.settimeout(val)
 
+    def timeout_get(self):
+        """Get the current timeout value, without messing with the stack.
+
+        :return: The current timeout value.
+        :rtype: number
+        """
+
+        return self.sock.gettimeout()
+
     def __connect_client(self, host, port):
         """Connect to host as if we are the client and they are the server.
 
@@ -108,7 +115,7 @@ class FTSock:
         conn, addr = "", ""
 
         # Reject connections until the host matches (within 5m)
-        self.timeout_push(480)
+        self.timeout_push(300)
         while True:
             self.sock.listen(1)
             conn, (addr, port) = self.sock.accept()

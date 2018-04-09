@@ -1,8 +1,6 @@
 """Contains errors that the network operations can throw.
 :Authors:
     Colton Bates
-
-:Version 0.6:
 """
 
 class UnexpectedValueError(RuntimeError):
@@ -27,7 +25,7 @@ class UnexpectedValueError(RuntimeError):
         :rtype: string
         """
 
-        return "UnexpectedValueError('" + self.state + "', '" + self.value + "'')"
+        return "UnexpectedValueError('" + self.state + "', '" + self.value + "')"
 
     def __str__(self):
         """:return: The string representation of the error (as would be printed,
@@ -35,7 +33,7 @@ class UnexpectedValueError(RuntimeError):
         :rtype: string
         """
 
-        return "in " + self.state + ", but got " + self.value
+        return "Expected '" + self.state + "', but got '" + self.value + "'"
 
 class BrokenSocketError(RuntimeError):
     """Raised when the socket connection is broken unexpectedly.

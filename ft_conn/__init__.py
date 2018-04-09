@@ -2,15 +2,14 @@
 ft_sock to provide network functionality.
 
 :Authors: Colton Bates
-
-:Version 0.5:
 """
 
 import enum
+from pathlib import Path
 from socket import timeout
 from file_info import FileInfo
 from .ft_sock import FTSock
-from .ft_error import UnexpectedValueError
+from .ft_error import UnexpectedValueError, BrokenSocketError
 
 class FTProto(enum.Enum):
     """Internally used to define control tokens for data transmission.
@@ -23,8 +22,8 @@ class FTProto(enum.Enum):
     REQ_FILE = b'f'
 
     # Used to represent a lack of requests and invalid tokens, respectively.
-    REQ_NONE = None
-    TINVALID = None
+    REQ_NONE = b'None'
+    TINVALID = b'Invalid'
 
     # Used to send the filelist. Following is a '!i' representing the
     # number of entries, and then each entry is sent as a string (path),
@@ -46,8 +45,15 @@ class FTConn:
     # the program (response is it reversed). Must be 8 chars.
     _handshake_string = b'FTProtoW'
 
-    def __init__(self):
-        self.fts = FTSock()
+    def __init__(self, fts=None):
+        """:param fts: FTSock object to use for connections. Constructs
+            a new one if None or missing.
+            :type fts: FTSock
+        """
+        if fts is None:
+            self.fts = FTSock()
+        else:
+            self.fts = fts
 
     @staticmethod
     def __gtv(tok_val):
@@ -85,17 +91,18 @@ class FTConn:
         try:
             tokr = self.fts.recv_bytes(1)
         except timeout:
-            tokr = None
+                                          # For some reason pylint doesn't think
+                                          # FTProto.<x>.value is of type bytes,
+                                          # but it is, so we need to ignore the error
+            tokr = FTProto.REQ_NONE.value # pylint: disable = redefined-variable-type
+
 
         tok = self.__gtv(tokr)
 
         if tok not in toktuple:
-            if tok is FTProto.REQ_NONE:
-                tokrs = "None"
-            else:
-                tokrs = tokr.decode()
+            tokrs = tok.value
 
-            raise UnexpectedValueError(str(toktuple), tokrs)
+            raise UnexpectedValueError(str(toktuple), str(tokrs))
 
         return tok
 
@@ -126,7 +133,7 @@ class FTConn:
             return True
 
 
-        elif mode == "Server":
+        else: # Assume mode == "Server"
             alt_hs = self.fts.recv_bytes(8)
             alt_version = self.fts.recv_int()
 
@@ -137,9 +144,6 @@ class FTConn:
                 return False
 
             return True
-
-        else:
-            return False
 
     def connect(self, host, port):
         """Initializes the connection to a remote host.
@@ -247,9 +251,10 @@ class FTConn:
 
         file_list = []
 
+
         self.fts.send_tok(FTProto.REQ_LIST)
 
-        self.__expect_tok(FTProto.RES_LIST)
+        self.__expect_tok((FTProto.RES_LIST,))
 
         list_len = self.fts.recv_int()
 
@@ -257,6 +262,6 @@ class FTConn:
             path = self.fts.recv_rstring().decode()
             (hashd, is_dir, mtime) = self.fts.recv_struct('!32s?i')
 
-            file_list.append(FileInfo(path=path, file_hash=hashd, is_dir=is_dir, mtime=mtime))
+            file_list.append(FileInfo(path=Path(path), file_hash=hashd, is_dir=is_dir, mtime=mtime))
 
         return file_list
