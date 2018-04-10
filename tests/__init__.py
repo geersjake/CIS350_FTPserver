@@ -7,4 +7,5 @@
 # tests.
 
 from .test_ft_error import TestFTErrors
-from .test_ft_conn import TestFTConnLM
+from .test_ft_conn import TestFTConn
+from .test_ft_sock import TestFTSock

@@ -164,7 +164,7 @@ class FTConn:
         if connected:
             self.fts.timeout_push(10)
             if not self.__handshake(mode):
-                message = "Handshake failed."
+                message = "Handshake failed"
 
         return message
 
