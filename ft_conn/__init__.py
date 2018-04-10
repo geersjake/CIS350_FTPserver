@@ -9,7 +9,7 @@ from pathlib import Path
 from socket import timeout
 from file_info import FileInfo
 from .ft_sock import FTSock
-from .ft_error import UnexpectedValueError, BrokenSocketError
+from .ft_error import UnexpectedValueError
 
 class FTProto(enum.Enum):
     """Internally used to define control tokens for data transmission.
@@ -91,10 +91,10 @@ class FTConn:
         try:
             tokr = self.fts.recv_bytes(1)
         except timeout:
-                                          # For some reason pylint doesn't think
-                                          # FTProto.<x>.value is of type bytes,
-                                          # but it is, so we need to ignore the error
-            tokr = FTProto.REQ_NONE.value # pylint: disable = redefined-variable-type
+                                            # For some reason pylint doesn't think
+                                            # FTProto.<x>.value is of type bytes,
+                                            # but it is, so we need to ignore the error
+            tokr = FTProto.REQ_NONE.value   # pylint: disable = redefined-variable-type
 
 
         tok = self.__gtv(tokr)

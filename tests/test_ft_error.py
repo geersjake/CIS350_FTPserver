@@ -4,7 +4,7 @@
 # pylint: disable = protected-access
 
 import pytest
-from ft_conn import UnexpectedValueError, BrokenSocketError
+from ft_conn.ft_error import UnexpectedValueError, BrokenSocketError
 
 class TestFTErrors:
     def test_uve(self):

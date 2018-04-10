@@ -4,7 +4,8 @@
 # pylint: disable = protected-access
 
 import pytest
-from ft_conn import FTSock, BrokenSocketError
+from ft_conn.ft_sock import FTSock
+from ft_conn.ft_error import BrokenSocketError
 from .ft_mock import MockSock
 
 class TestFTSock:

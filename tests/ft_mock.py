@@ -4,7 +4,7 @@
 # pylint: disable = protected-access
 
 from socket import timeout
-from ft_conn import FTSock
+from ft_conn.ft_sock import FTSock
 
 class MockSock():
     def __init__(self, con=False):

@@ -9,8 +9,9 @@ from pathlib import Path
 import pytest
 from file_info import FileInfo
 
-# v this could be a wildcard if pylint didn't complain
-from ft_conn import FTProto, FTConn, FTSock, UnexpectedValueError
+from ft_conn import FTProto, FTConn
+from ft_conn.ft_sock import FTSock
+from ft_conn.ft_error import UnexpectedValueError
 
 from .ft_mock import MockFTSock
 
@@ -211,7 +212,7 @@ class TestFTConn:
         assert err.value.value == str(FTProto.TINVALID.value)
         assert c.fts.sock.check_bytes(FTProto.REQ_FILE.value)
         assert c.fts.sock.check_bytes(pr(test_file_name.encode()))
-        assert c.fts.sock.ensure_esend()
+        assert c.fts.sock.ensure_esend() and not c.fts.sock.ensure_erecv()
 
     def test_request_file_n(self):
         # Test no response to request
@@ -268,6 +269,7 @@ class TestFTConn:
         assert c2.fts.sock.ensure_esend() and c2.fts.sock.ensure_erecv()
 
     def test_ftsock_gen(self):
-        # Testing the default contructor for FTConn
+        # Testing the default contructor for FTConn (should be removed
+        # when actual tests come)
         c = FTConn()
         assert isinstance(c.fts, FTSock)
