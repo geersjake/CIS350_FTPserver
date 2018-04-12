@@ -32,11 +32,11 @@ class Encryption:
         :param password: The password key to encrypt or decrypt data
         :type password: str
         """
-        if not isinstance(data, str):
-            raise DataError("Error: Data param must be string")  # TODO: handle
+        #if not isinstance(data, str):
+            #raise DataError("Error: Data param must be string")  # TODO: handle
 
-        if not isinstance(password, str):
-            raise PasswordError("Error: Password must be string")  # TODO: handle
+        #if not isinstance(password, str):
+            #raise PasswordError("Error: Password must be string")  # TODO: handle
 
         self._data = data
         self._password = password
@@ -52,7 +52,7 @@ class Encryption:
 
         return self.data
 
-    def decrypt(self):
+    def decrypt(self) -> object:
         """Decrypt the hashed data using password
         :return: The decrypted data
         :rtype: str
