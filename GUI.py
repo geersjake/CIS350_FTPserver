@@ -39,7 +39,6 @@ class Application(Frame):
 
         self.ft = ft_conn.FTConn()
 
-        x=1
     def encrypt_file(self):
         file_data = filedialog.askopenfile()
         file_data = str(file_data)
@@ -70,11 +69,11 @@ class Application(Frame):
 
     def requests(self):
         x, y = self.ft.check_for_request()
-        if x == ft_conn.FTProto.REQ_FILE:
-            #TODO y is file name, send to other computer
-        if x == ft_conn.FTProto.REQ_LIST:
+        # if x == ft_conn.FTProto.REQ_FILE:
+        # #TODO y is file name, send to other computer
+        # if x == ft_conn.FTProto.REQ_LIST:
+        # #TODO last thing, call self.root.after()
 
-        #TODO last thing, call self.root.after()
 
 root = Tk()
 app = Application(master=root)
