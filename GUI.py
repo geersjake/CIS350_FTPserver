@@ -38,6 +38,8 @@ class Application(Frame):
         self.pack()
 
         self.ft = ft_conn.FTConn()
+
+        x=1
     def encrypt_file(self):
         file_data = filedialog.askopenfile()
         file_data = str(file_data)
