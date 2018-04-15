@@ -84,26 +84,3 @@ class Encryption:
         self._password = new_pass
 
 
-# Encryption Method                #
-
-dataToEnc = open("data_to_encrypt.txt", "r")  # open file, r = read
-enc_data = open("encrypted_data.txt", "wb")  # open file, wb = write bytes
-
-en = Encryption(dataToEnc.read(), "password")  # create encryption instance with data = file.read()
-temp = en.encrypt()  # encrypt
-enc_data.write(temp)  # write the encrypted data to file
-
-dataToEnc.close()  # close files
-enc_data.close()
-
-#        Decryption Method                #
-with open("encrypted_data.txt", 'rb') as file:  # open the file containing crazy egyptian bytes and read it into content
-    contents = file.read()
-dec_data = open("decrypted_data.txt", "w")  # open decrypted data file for writing
-
-en2 = Encryption(contents, "password")  # create encryption instance using data = contents
-
-dec_data.write(en2.decrypt())  # write to the file
-
-enc_data.close()  # close files
-dec_data.close()

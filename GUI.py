@@ -38,26 +38,31 @@ class Application(Frame):
         self.pack()
 
         self.ft = ft_conn.FTConn()
-
     def encrypt_file(self):
         file_data = filedialog.askopenfile()
-        file_data = str(file_data)
-        self.en = Encryption(file_data, "defaultP")
-        x = self.en.encrypt()
-        f = open("encrypted_data.txt", "wb")
-        f.write(x)
-        f.close()
-        print("Your file " + file_data + " has been encrypted and can be sent")
+        enc_data = open("encrypted_data.txt", "wb")  # open file, wb = write bytes
+
+        en = Encryption(file_data.read(), "password")  # create encryption instance with data = file.read()
+        temp = en.encrypt()  # encrypt
+        enc_data.write(temp)  # write the encrypted data to file
+
+        file_data.close()  # close files
+        enc_data.close()
+
+        print("Your file " + file_data.name + " has been encrypted and can be sent")
 
     def decrypt_file(self):
         file_data = filedialog.askopenfile()
-        file_data = str(file_data)
-        self.en = Encryption(file_data, "defaultP")
-        x = self.en.decrypt()
-        f = open("encrypted_data.txt", "wb")
-        f.write(x)
-        f.close()
-        print("Your file " + file_data + " has been decrypted and can be viewed")
+        with open("encrypted_data.txt",'rb') as file:  # open the file containing crazy egyptian bytes and read it into content
+            contents = file.read()
+        dec_data = open("decrypted_data.txt", "w")  # open decrypted data file for writing
+
+        en2 = Encryption(contents, "password")  # create encryption instance using data = contents
+
+        dec_data.write(en2.decrypt())  # write to the file
+
+        dec_data.close()
+        print("Your file " + file_data.name + " has been decrypted and can be viewed")
 
     def connect_command(self):
         ip_and_port = self.entry.get()
@@ -67,13 +72,13 @@ class Application(Frame):
         self.ft.connect(ip, port)
         return
 
-    def requests(self):
-        x, y = self.ft.check_for_request()
-        # if x == ft_conn.FTProto.REQ_FILE:
-        # #TODO y is file name, send to other computer
-        # if x == ft_conn.FTProto.REQ_LIST:
-        # #TODO last thing, call self.root.after()
+    #def requests(self):
+     #   x, y = self.ft.check_for_request()
+      #  if x == ft_conn.FTProto.REQ_FILE:
+            #TODO y is file name, send to other computer
+       # if x == ft_conn.FTProto.REQ_LIST:
 
+        #TODO last thing, call self.root.after()
 
 root = Tk()
 app = Application(master=root)
