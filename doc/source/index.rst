@@ -10,14 +10,9 @@ Welcome to FTPserver's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-.. autoclass:: file_info.local.LocalFileInfoBrowser
-        :members:
+Our application is split into multiple parts to allow more sensible development and maintenance. You can browse the documentation by these parts:
+        * The module responsible for the network bits (connecting, sending, and receiving data: :doc:`ft_conn`
 
-.. automodule:: ft_conn
-		:members:
-
-..	autoclass:: ft_conn.ft_sock.FTSock
-		:members:
 
 Indices and tables
 ==================
