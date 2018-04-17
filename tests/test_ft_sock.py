@@ -34,4 +34,3 @@ class TestFTSock:
 
         with pytest.raises(BrokenSocketError):
             s.send_bytes(b'l')
-

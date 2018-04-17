@@ -1,6 +1,5 @@
 """Handle queries and updates of local files.
-:Authors:
-    Chris van Zomeren
+Authors: Chris van Zomeren
 
 :Date: 2018-03-07
 """

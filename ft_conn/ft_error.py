@@ -1,6 +1,4 @@
 """Contains errors that the network operations can throw.
-:Authors:
-    Colton Bates
 """
 
 class UnexpectedValueError(RuntimeError):

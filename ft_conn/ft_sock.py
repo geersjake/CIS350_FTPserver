@@ -1,7 +1,5 @@
 """Class to handle basic connection mechanics. Used by ft_conn to send and
 data from the other host after the connection is established.
-:Authors:
-    Colton Bates
 """
 
 import socket

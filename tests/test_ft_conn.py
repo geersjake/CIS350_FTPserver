@@ -15,7 +15,7 @@ from ft_conn.ft_error import UnexpectedValueError
 
 from .ft_mock import MockFTSock
 
-
+# We need some data to test with:
 
 correct_handshake = b'FTProtoW'
 correct_hs_resp = correct_handshake[::-1]
@@ -33,6 +33,7 @@ test_file_contents = b'Hello, World!'
 
 
 def file_info_equals(a, b):
+    # There is no equality function for FileInfo, so we make a quick one
     pe = a.path == b.path
     he = a.hash == b.hash
     de = a.is_dir == b.is_dir
@@ -40,9 +41,11 @@ def file_info_equals(a, b):
     return pe and he and de and te
 
 def pi(num):
+    # Packs an integer (like the protocol does)
     return struct.pack('!i', num)
 
 def pr(rstr):
+    # Packs a raw string (like the protocol does)
     return struct.pack('!i{}s'.format(len(rstr)), len(rstr), rstr)
 
 

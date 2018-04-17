@@ -1,7 +1,5 @@
 """Module to handle transfer protocol and actual data transfer. Uses
 ft_sock to provide network functionality.
-
-:Authors: Colton Bates
 """
 
 import enum
@@ -240,7 +238,7 @@ class FTConn:
         return self.fts.recv_rstring()
 
     def request_file_list(self):
-        """Requests and receives a file list ffrom the other host.
+        """Requests and receives a file list from the other host.
 
         :return: A list containing all of the file information requested.
         :rtype: list of FileInfo

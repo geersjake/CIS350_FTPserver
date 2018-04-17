@@ -9,3 +9,7 @@
 from .test_ft_error import TestFTErrors
 from .test_ft_conn import TestFTConn
 from .test_ft_sock import TestFTSock
+from .test_encryption import TestPasswordMethods, \
+	TestDataMethods, TestEncryptMethod, \
+	TestDecryptMethod, TestSecurity
+from .test_file_info import TestLocalFileInfoBrowser
