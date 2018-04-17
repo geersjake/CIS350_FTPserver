@@ -20,8 +20,8 @@ Furthermore, we used the following for development-specific tasks (e.g. document
 To run linting (static analysis + code standard checking), run `pylint ft\_conn file\_info GUI encryption`  
 You can also lint our tests by running `pylint tests`  
 
-To run our test cases with coverage measurement, run `pytest tests`  
-To run our test cases _with_ coverage measurement, run `pytest --cov=. tests`
+To run our test cases without coverage measurement, run `pytest`  
+To run our test cases _with_ coverage measurement, run `pytest --cov=.`
 
 ## Documentation
 To generate html documentation pages, run `make html` from within the `doc` subdirectory. After it terminates, the root documentation will be at `doc/build/html/index.html`
