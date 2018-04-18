@@ -2,7 +2,6 @@ from tkinter import *
 from tkinter import filedialog
 from encryption import Encryption
 import ft_conn
-import asyncio
 import file_info
 import pathlib
 
@@ -82,13 +81,23 @@ class Application(Frame):
         return
 
     def requests(self):
-        self.ft.request_file_list()
-        root.after(10000, self.requests)
+        try:
+            self.ft.request_file_list()
+        except Exception as err:
+            raise err
+        finally:
+            root.after(10000, self.requests)
 
     def request_handler(self):
-        request = self.ft.check_for_request()
-        print(request)
-        root.after(10, self.request_handler)
+        try:
+            request = self.ft.check_for_request()
+            print(request)
+        except OSError as err:
+            pass
+        except Exception as err:
+            raise err
+        finally:
+            root.after(10, self.request_handler)
 
 
 root = Tk()
