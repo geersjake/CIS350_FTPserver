@@ -91,8 +91,9 @@ class Application(Frame):
 
     def request_handler(self):
         try:
-            request = self.ft.check_for_request()
-            print(request)
+            data = self.ft.receive_data()
+            if data:
+                print(data)
 
         except OSError as err:
             pass
