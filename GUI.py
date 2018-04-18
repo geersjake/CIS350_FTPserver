@@ -76,7 +76,8 @@ class Application(Frame):
         x = ip_and_port.split(",")
         ip = str(x[0])
         port = int(x[1])
-        self.ft.connect(ip, port)
+        message = self.ft.connect(ip, port)
+        print(message)
         root.after(100, app.requests)
         return
 
@@ -92,12 +93,16 @@ class Application(Frame):
         try:
             request = self.ft.check_for_request()
             print(request)
+
         except OSError as err:
             pass
+
         except ft_conn.ft_error.BrokenSocketError as err:
             pass
+
         except Exception as err:
             raise err
+
         finally:
             root.after(10, self.request_handler)
 
