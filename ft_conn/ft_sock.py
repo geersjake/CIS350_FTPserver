@@ -96,7 +96,11 @@ class FTSock:
         :type port: number
         """
 
-        self.sock.connect((host, port))
+        try:
+            self.sock.connect((host, port))
+        except Exception as ex:
+            self.sock.close()
+            raise ex
 
     def __connect_server(self, host, port):
         """ Connect to host as if we are the server and they are the client (i.e.
@@ -109,23 +113,27 @@ class FTSock:
         :type port: number
         """
 
-        self.sock.bind(("", port))
-        conn, addr = "", ""
+        try:
+            self.sock.bind(("", port))
+            conn, addr = "", ""
 
-        # Reject connections until the host matches (within 5m)
-        self.timeout_push(300)
-        while True:
-            self.sock.listen(1)
-            conn, (addr, port) = self.sock.accept()
+            # Reject connections until the host matches (within 5m)
+            self.timeout_push(300)
+            while True:
+                self.sock.listen(1)
+                conn, (addr, port) = self.sock.accept()
 
-            if addr == host:
-                break
-            else:
-                conn.close()
+                if addr == host:
+                    break
+                else:
+                    conn.close()
 
-        self.timeout_pop()
+            self.timeout_pop()
 
-        self.sock = conn
+            self.sock = conn
+        except Exception as ex:
+            self.sock.close()
+            raise ex
 
     def connect(self, host, port):
         """Starts a pseudo-symmetric connection by trying to connect to
@@ -153,18 +161,8 @@ class FTSock:
         # This is the error that we will get if there is no server
         # 	running on the other host
         except ConnectionRefusedError:
-
-            try: # Connecting as server <- client
-                self.__connect_server(host, port)
-            except socket.error as smsg:
-                print("s", smsg)
-                return False, "Server", smsg
-
+            self.__connect_server(host, port)
             return True, "Server", "Success"
-
-        except socket.error as cmsg:
-            print("c", cmsg)
-            return False, "Client", cmsg
 
         return True, "Client", "Success"
 
