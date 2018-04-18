@@ -78,15 +78,20 @@ class Application(Frame):
         ip = str(x[0])
         port = int(x[1])
         self.ft.connect(ip, port)
-        self.ft.send_file_list(self.fi.list_info(self.path))
+        root.after(100, app.requests)
         return
 
     def requests(self):
-        print("in loop")
-        root.after(2000, self.requests)
+        self.ft.request_file_list()
+        root.after(10000, self.requests)
+
+    def request_handler(self):
+        request = self.ft.check_for_request()
+        print(request)
+        root.after(10, self.request_handler)
 
 
 root = Tk()
 app = Application(master=root)
-root.after(2000, app.requests)
+root.after(10, app.request_hadler)
 app.mainloop()
