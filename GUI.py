@@ -2,6 +2,9 @@ from tkinter import *
 from tkinter import filedialog
 from encryption import Encryption
 import ft_conn
+import asyncio
+import file_info
+import pathlib
 
 
 class Application(Frame):
@@ -38,11 +41,16 @@ class Application(Frame):
         self.pack()
 
         self.ft = ft_conn.FTConn()
+
+        self.fi = file_info.LocalFileInfoBrowser()
+
+        self.path = pathlib.Path(".")
+
     def encrypt_file(self):
         file_data = filedialog.askopenfile()
         enc_data = open("encrypted_data.txt", "wb")  # open file, wb = write bytes
 
-        en = Encryption(file_data.read(), "password")  # create encryption instance with data = file.read()
+        en = Encryption(file_data.read(), self.entry.get())  # create encryption instance with data = file.read()
         temp = en.encrypt()  # encrypt
         enc_data.write(temp)  # write the encrypted data to file
 
@@ -57,7 +65,7 @@ class Application(Frame):
             contents = file.read()
         dec_data = open("decrypted_data.txt", "w")  # open decrypted data file for writing
 
-        en2 = Encryption(contents, "password")  # create encryption instance using data = contents
+        en2 = Encryption(contents, self.entry.get())  # create encryption instance using data = contents
 
         dec_data.write(en2.decrypt())  # write to the file
 
@@ -70,16 +78,15 @@ class Application(Frame):
         ip = str(x[0])
         port = int(x[1])
         self.ft.connect(ip, port)
+        self.ft.send_file_list(self.fi.list_info(self.path))
         return
 
-    #def requests(self):
-     #   x, y = self.ft.check_for_request()
-      #  if x == ft_conn.FTProto.REQ_FILE:
-            #TODO y is file name, send to other computer
-       # if x == ft_conn.FTProto.REQ_LIST:
+    def requests(self):
+        print("in loop")
+        root.after(2000, self.requests)
 
-        #TODO last thing, call self.root.after()
 
 root = Tk()
 app = Application(master=root)
+root.after(2000, app.requests)
 app.mainloop()

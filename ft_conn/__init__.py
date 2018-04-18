@@ -213,7 +213,7 @@ class FTConn:
 
         for file_info in file_list:
             self.fts.send_rstring(str(file_info.path).encode())
-            self.fts.send_struct('!32s?i', file_info.hash,
+            self.fts.send_struct('!32s?Q', file_info.hash,
                                  file_info.is_dir,
                                  file_info.mtime)
 
@@ -258,7 +258,7 @@ class FTConn:
 
         for _ in range(list_len):
             path = self.fts.recv_rstring().decode()
-            (hashd, is_dir, mtime) = self.fts.recv_struct('!32s?i')
+            (hashd, is_dir, mtime) = self.fts.recv_struct('!32s?Q')
 
             file_list.append(FileInfo(path=Path(path), file_hash=hashd, is_dir=is_dir, mtime=mtime))
 
