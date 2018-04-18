@@ -93,5 +93,5 @@ class Application(Frame):
 
 root = Tk()
 app = Application(master=root)
-root.after(10, app.request_hadler)
+root.after(10, app.request_handler)
 app.mainloop()
