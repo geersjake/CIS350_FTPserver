@@ -73,7 +73,7 @@ class Application(Frame):
 
     def connect_command(self):
         ip_and_port = self.entry.get()
-        x = ip_and_port.split(",")
+        x = ip_and_port.split(":")
         ip = str(x[0])
         port = int(x[1])
         message = self.ft.connect(ip, port)

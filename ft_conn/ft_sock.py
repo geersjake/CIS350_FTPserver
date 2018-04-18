@@ -245,7 +245,7 @@ class FTSock:
         :type token: FTProto
         """
 
-        self.send_bytes(token.value)
+        self.send_bytes(token)
 
     def send_struct(self, fmt, *data):
         """Packs and sends data over the network as a struct.

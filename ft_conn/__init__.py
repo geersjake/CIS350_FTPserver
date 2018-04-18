@@ -9,7 +9,7 @@ from file_info import FileInfo
 from .ft_sock import FTSock
 from .ft_error import UnexpectedValueError
 
-class FTProto(enum.Enum):
+class FTProto:
     """Internally used to define control tokens for data transmission.
     """
 
@@ -172,16 +172,16 @@ class FTConn:
 
 
 
-    def __receive_REQ_LIST():
+    def __receive_REQ_LIST(self):
         print("Received REQ_LIST")
         # TODO: Implement
 
-    def __receive_REQ_FILE():
+    def __receive_REQ_FILE(self):
         fname = self.fts.recv_rstring().decode()
         print("Received REQ_FILE", fname)
         #TODO: Implement
 
-    def __receive_RES_LIST():
+    def __receive_RES_LIST(self):
         file_list = []
         for _ in range(self.fts.recv_int()):
             path = self.fts.recv_rstring().decode()
@@ -191,19 +191,21 @@ class FTConn:
 
         return file_list
 
-    def __receive_RES_FILE():
+    def __receive_RES_FILE(self):
         return self.fts.recv_rstring()
         
 
     def receive_data(self):
+        self.fts.timeout_push(0)
         recv = self.fts.recv_bytes(1)
+        self.fts.timeout_pop()
         if recv == FTProto.REQ_LIST:
-            return recv, self.handle_received_REQ_LIST()
+            return recv, self.__receive_REQ_LIST()
         elif recv == FTProto.REQ_FILE:
-            return recv, self.handle_received_REQ_FILE()
+            return recv, self.__receive_REQ_FILE()
         elif recv == FTProto.RES_LIST:
-            return recv, self.handle_received_RES_LIST()
+            return recv, self.__receive_RES_LIST()
         elif recv == FTProto.RES_FILE:
-            return recv, self.handle_received_RES_FILE()
+            return recv, self.__receive_RES_FILE()
         else:
             return None
