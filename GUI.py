@@ -94,6 +94,8 @@ class Application(Frame):
             print(request)
         except OSError as err:
             pass
+        except ft_conn.ft_error.BrokenSocketError as err:
+            pass
         except Exception as err:
             raise err
         finally:
