@@ -25,16 +25,9 @@ class FTSock:
         :type sock: socket.socket()
         """
 
-        if sock is None:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        else:
-            self.sock = sock
-
-        if test:
-            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
+        self.sock = None
         # Initialize timeout stack
-        self.timeout_stack = Queue()
+        self.timeout_stack = []
 
     # 	These three functions allow us to quickly and easily switch between
     # timeouts
@@ -46,8 +39,9 @@ class FTSock:
         :type val: number
         """
 
-        self.timeout_stack.put(self.sock.gettimeout())
-        self.sock.settimeout(val)
+        self.timeout_stack.append(val)
+        if self.sock:
+            self.sock.settimeout(self.timeout_get())
 
     def timeout_pop(self):
         """Pop a value from the timeout stack (basically restore a timeout to
@@ -59,32 +53,28 @@ class FTSock:
         :rtype: number
         """
 
-        oldtimeout = self.sock.gettimeout()
-
-        # If the queue is empty, default to None (blocking mode) (shouldn't happen)
-        newtimeout = None if self.timeout_stack.empty() else self.timeout_stack.get()
-
-        self.sock.settimeout(newtimeout)
-        return oldtimeout
-
-    def timeout_set(self, val):
-        """Set the timeout, without messing with the stack (and by doing so, messing
-        up the stack).
-
-        :param val: timeout value to set, in seconds.
-        :type val: number
-        """
-
-        self.sock.settimeout(val)
+        last = self.timeout_stack.pop()
+        if self.sock:
+            self.sock.settimeout(self.timeout_get())
+        return last
 
     def timeout_get(self):
-        """Get the current timeout value, without messing with the stack.
+        if len(self.timeout_stack) >= 1:
+            return self.timeout_stack[-1]
+        else:
+            return None
 
-        :return: The current timeout value.
-        :rtype: number
-        """
-
-        return self.sock.gettimeout()
+    def set_socket(self, sock):
+        if self.sock:
+            try:
+                self.sock.shutdown(socket.SHUT_RDWR)
+            except OSError as ex:
+                print('OSError while shutting down socket:', ex)
+            self.sock.close()
+            self.sock = None
+        self.sock = sock
+        if self.sock:
+            self.sock.settimeout(self.timeout_get())
 
     def __connect_client(self, host, port):
         """Connect to host as if we are the client and they are the server.
@@ -96,10 +86,12 @@ class FTSock:
         :type port: number
         """
 
+        self.set_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+
         try:
             self.sock.connect((host, port))
         except Exception as ex:
-            self.sock.close()
+            self.set_socket(None)
             raise ex
 
     def __connect_server(self, host, port):
@@ -112,6 +104,7 @@ class FTSock:
         :param port: Port to listen on.
         :type port: number
         """
+        self.set_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
 
         try:
             self.sock.bind(("", port))
@@ -126,13 +119,14 @@ class FTSock:
                 if addr == host:
                     break
                 else:
-                    conn.close()
+                    print("Closing for some reason")
+                    self.set_socket(None)
 
             self.timeout_pop()
 
             self.sock = conn
         except Exception as ex:
-            self.sock.close()
+            self.set_socket(None)
             raise ex
 
     def connect(self, host, port):
@@ -179,6 +173,8 @@ class FTSock:
             we recieve the specified number of bytes.
         """
 
+        if not self.sock:
+            return b'None'
         chunks = []
         totalrecvd = 0
         while totalrecvd < num:
