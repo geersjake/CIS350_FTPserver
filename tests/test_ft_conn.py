@@ -6,12 +6,9 @@
 import struct
 from pathlib import Path
 
-import pytest
 from file_info import FileInfo
 
 from ft_conn import FTProto, FTConn
-from ft_conn.ft_sock import FTSock
-from ft_conn.ft_error import UnexpectedValueError
 
 from .ft_mock import MockFTSock
 
@@ -212,5 +209,49 @@ class TestFTConn:
         c.fts.sock.append_bytes(pr(test_file_name.encode()))
         c.fts.sock.append_bytes(pr(test_file_contents))
 
-        assert c.receive_data() == (FTProto.RES_FILE, (test_file_name.encode(), test_file_contents))
+        assert c.receive_data() == (FTProto.RES_FILE, \
+            (test_file_name.encode(), test_file_contents))
         assert c.fts.sock.ensure_erecv() and c.fts.sock.ensure_esend()
+
+    def test_fl_sr(self):
+        # Test send/recv of filelist
+        c1 = FTConn(MockFTSock(True))
+        c2 = FTConn(MockFTSock(True))
+
+        fl = [FileInfo(path=Path(), file_hash=b'12345678901234567890123456789012', \
+            is_dir=False, mtime=98)]
+
+        c1.send_file_list(fl)
+        c2.fts.sock.append_bytes(c1.fts.sock.retrieve_bytes())
+        t, flr = c2.receive_data()
+        assert t == FTProto.RES_LIST
+
+        assert len(fl) == len(flr)
+
+        for orig, recv in zip(fl, flr):
+            assert file_info_equals(orig, recv)
+
+        assert c1.fts.sock.ensure_esend() and c1.fts.sock.ensure_erecv()
+        assert c2.fts.sock.ensure_esend() and c2.fts.sock.ensure_erecv()
+
+    def test_f_sr(self):
+        # Test send/recv of file
+        c1 = FTConn(MockFTSock(True))
+        c2 = FTConn(MockFTSock(True))
+
+        c1.send_file(test_file_name.encode(), test_file_contents)
+        c2.fts.sock.append_bytes(c1.fts.sock.retrieve_bytes())
+        assert c2.receive_data() == (FTProto.RES_FILE, (test_file_name.encode(), \
+            test_file_contents))
+
+        assert c1.fts.sock.ensure_esend() and c1.fts.sock.ensure_erecv()
+        assert c2.fts.sock.ensure_esend() and c2.fts.sock.ensure_erecv()
+
+    def test_fail_tok(self):
+        # Test invalid (ignored) token
+        c = FTConn(MockFTSock(True))
+
+        c.fts.sock.append_bytes(b'Y') # Not a valid token
+        assert c.receive_data() == (b'Y', None)
+        assert c.fts.sock.ensure_erecv and c.fts.sock.ensure_esend()
+
