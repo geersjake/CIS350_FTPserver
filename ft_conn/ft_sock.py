@@ -25,7 +25,7 @@ class FTSock:
         :type sock: socket.socket()
         """
 
-        self.sock = None
+        self.sock = sock
         # Initialize timeout stack
         self.timeout_stack = []
 
@@ -64,6 +64,9 @@ class FTSock:
         else:
             return None
 
+    def timeout_set(self, timeout):
+        self.sock.settimeout(timeout)
+
     def set_socket(self, sock):
         if self.sock:
             try:
@@ -75,6 +78,7 @@ class FTSock:
         self.sock = sock
         if self.sock:
             self.sock.settimeout(self.timeout_get())
+
 
     def __connect_client(self, host, port):
         """Connect to host as if we are the client and they are the server.
