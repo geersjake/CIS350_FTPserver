@@ -174,12 +174,12 @@ class FTConn:
 
     def __receive_REQ_LIST(self):
         print("Received REQ_LIST")
-        # TODO: Implement
+        return None
 
     def __receive_REQ_FILE(self):
         fname = self.fts.recv_rstring().decode()
         print("Received REQ_FILE", fname)
-        #TODO: Implement
+        return fname
 
     def __receive_RES_LIST(self):
         file_list = []
@@ -208,4 +208,4 @@ class FTConn:
         elif recv == FTProto.RES_FILE:
             return recv, self.__receive_RES_FILE()
         else:
-            return None
+            return recv, None

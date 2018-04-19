@@ -174,7 +174,7 @@ class FTSock:
         """
 
         if not self.sock:
-            return b'None'
+            return None
         chunks = []
         totalrecvd = 0
         while totalrecvd < num:

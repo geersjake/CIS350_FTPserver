@@ -1,5 +1,4 @@
 from tkinter import *
-from tkinter import filedialog
 from encryption import Encryption
 import ft_conn
 import file_info
@@ -15,18 +14,6 @@ class Application(Frame):
         self.entry.pack()
         self.entry.delete(0, END)
 
-        # Encryption Button
-        self.encrypt = Button(self)
-        self.encrypt["text"] = "Encrypt file to export"
-        self.encrypt["command"] = self.encrypt_file
-        self.encrypt.pack(side="left")
-
-        # Decryption Button
-        self.decrypt = Button(self)
-        self.decrypt["text"] = "Decrypt a chosen file"
-        self.decrypt["command"] = self.decrypt_file
-        self.decrypt.pack(side="right")
-
         # Quit Program
         self.quit = Button(self, text="QUIT", fg="red", command=root.destroy)
         self.quit.pack(side="bottom")
@@ -39,43 +26,54 @@ class Application(Frame):
         self.en = Encryption("defaultData", "defaultPassword")
         self.pack()
 
+        self.label = Label(self)
+        self.label["text"] = "File List"
+        self.label.pack(side="top")
+
         self.ft = ft_conn.FTConn()
 
-        self.fi = file_info.LocalFileInfoBrowser()
+        self.local_files = file_info.LocalFileInfoBrowser()
+
+        self.remote_file_list = []
 
         self.path = pathlib.Path(".")
+        self.frame = None
+        self.pack()
 
-    def encrypt_file(self):
-        file_data = filedialog.askopenfile()
-        enc_data = open("encrypted_data.txt", "wb")  # open file, wb = write bytes
+    def encrypt_file(self, file_data):
+        # create encryption instance with data = file.read()
+        en = Encryption(file_data, "")
+        # encrypt
+        enc_data = en.encrypt()
+        return enc_data
 
-        en = Encryption(file_data.read(), self.entry.get())  # create encryption instance with data = file.read()
-        temp = en.encrypt()  # encrypt
-        enc_data.write(temp)  # write the encrypted data to file
-
-        file_data.close()  # close files
-        enc_data.close()
-
-        print("Your file " + file_data.name + " has been encrypted and can be sent")
-
-    def decrypt_file(self):
-        file_data = filedialog.askopenfile()
-        with open("encrypted_data.txt",'rb') as file:  # open the file containing crazy egyptian bytes and read it into content
+    def decrypt_file(self, file_data):
+        # open the file containing crazy egyptian bytes and read it into content
+        with open(file_data, 'rb') as file:
             contents = file.read()
-        dec_data = open("decrypted_data.txt", "w")  # open decrypted data file for writing
+        # open decrypted data file for writing
+        dec_data = open("decrypted_data.txt", "w")
 
-        en2 = Encryption(contents, self.entry.get())  # create encryption instance using data = contents
+        # create encryption instance using data = contents
+        en2 = Encryption(contents, "")
 
-        dec_data.write(en2.decrypt())  # write to the file
+        # write to the file
+        dec_data.write(en2.decrypt())
 
         dec_data.close()
         print("Your file " + file_data.name + " has been decrypted and can be viewed")
 
     def connect_command(self):
+        # retrieves ip address and port number
         ip_and_port = self.entry.get()
+        # breaks those two into a list
         x = ip_and_port.split(":")
+
+        # uses list to set each value independently
         ip = str(x[0])
         port = int(x[1])
+
+        # attempts to connect
         message = self.ft.connect(ip, port)
         print(message)
         root.after(100, app.requests)
@@ -89,15 +87,46 @@ class Application(Frame):
         finally:
             root.after(10000, self.requests)
 
+    def update_remote_file_list(self, file_list):
+
+        self.remote_file_list = file_list
+        if self.frame:
+            self.frame.pack_forget()
+            self.frame.destroy()
+        print("updating")
+        self.frame = Frame(self, height=2000, width=2000)
+        for files in self.local_files.list_info(self.path):
+            button = Button(self.frame)
+            button["text"] = files.path.name
+            button["command"] = lambda: self.ft.request_file(files.path)
+            button.pack()
+        self.frame.pack()
+        self.pack()
+
     def request_handler(self):
         try:
-            data = self.ft.receive_data()
-            if data:
-                print(data)
+            print("requesting")
+            message_type, data = self.ft.receive_data()
+            if message_type == ft_conn.FTProto.REQ_LIST:
+                self.ft.send_file_list(self.local_files.list_info(self.path))
+                print("file list sent")
+            elif message_type == ft_conn.FTProto.REQ_FILE:
+                self.ft.send_file(self.encrypt_file(pathlib.Path(data).read_bytes()))
+                print("file sent")
+            elif message_type == ft_conn.FTProto.RES_LIST:
+                self.update_remote_file_list(data)
+                print("file list received")
+            elif message_type == ft_conn.FTProto.RES_FILE:
+                # TODO fix me
+                self.decrypt_file(data)
+                print("file received")
+            elif message_type is not None:
+                print("unknown request")
 
-        except OSError as err:
-            pass
+        #except OSError as err:
+            #pass
 
+        # TODO don't raise just because no data
         except ft_conn.ft_error.BrokenSocketError as err:
             pass
 
