@@ -18,7 +18,7 @@ class TestPasswordMethods(unittest.TestCase):
     """Testing class to test all password related actions
     """
     def setUp(self):
-        self.enc = Encryption("defaultD", "defaultP")
+        self.enc = Encryption(b"defaultD", "defaultP")
         self.passError = PasswordError
 
     def test_get(self):
@@ -29,14 +29,14 @@ class TestPasswordMethods(unittest.TestCase):
         self.assertEqual(self.enc.password, "set1")
 
     def test_password_error0(self):
-        self.assertRaises(self.passError, Encryption, "temp", None)
+        self.assertRaises(self.passError, Encryption, b"temp", None)
 
     def test_password_error1(self):
-        self.assertRaises(self.passError, Encryption, "temp", 123)
+        self.assertRaises(self.passError, Encryption, b"temp", 123)
 
     def test_password_error2(self):
         arr = [3]
-        self.assertRaises(self.passError, Encryption, "temp", arr)
+        self.assertRaises(self.passError, Encryption, b"temp", arr)
 
 
 class TestDataMethods(unittest.TestCase):
@@ -44,15 +44,15 @@ class TestDataMethods(unittest.TestCase):
     """
 
     def setUp(self):
-        self.enc = Encryption("defaultD", "defaultP")
+        self.enc = Encryption(b"defaultD", "defaultP")
         self.dataError = DataError
 
     def test_get(self):
-        self.assertEqual(self.enc.data, "defaultD")
+        self.assertEqual(self.enc.data, b"defaultD")
 
     def test_set(self):
-        self.enc.data = "set2"
-        self.assertEqual(self.enc.data, "set2")
+        self.enc.data = b"set2"
+        self.assertEqual(self.enc.data, b"set2")
 
     def test_data_error0(self):
         self.assertRaises(self.dataError, Encryption, None, "temp")
@@ -70,7 +70,7 @@ class TestEncryptMethod(unittest.TestCase):
     """
 
     def setUp(self):
-        self.enc = Encryption("defaultD", "defaultP")
+        self.enc = Encryption(b"defaultD", "defaultP")
 
     def test_encrypt0(self):
         self.enc.encrypt()
@@ -79,10 +79,10 @@ class TestEncryptMethod(unittest.TestCase):
 
     """ Test salt is not same """
     def test_encrypt1(self):
-        self.enc1 = Encryption("HELLO RED BULL ALL DAY IPA", "fee fi fo")
+        self.enc1 = Encryption(b"HELLO RED BULL ALL DAY IPA", "fee fi fo")
         hash1 = self.enc.encrypt()
 
-        self.enc2 = Encryption("HELLO RED BULL ALL DAY IPA", "fee fi fo")
+        self.enc2 = Encryption(b"HELLO RED BULL ALL DAY IPA", "fee fi fo")
         hash2 = self.enc2.encrypt()
 
         self.assertNotEqual(hash1, hash2)
@@ -93,7 +93,7 @@ class TestDecryptMethod(unittest.TestCase):
     """
 
     def setUp(self):
-        self.enc = Encryption("defaultD", "defaultP")
+        self.enc = Encryption(b"defaultD", "defaultP")
 
     # def tearDown(self): # something here?
 
@@ -101,11 +101,3 @@ class TestDecryptMethod(unittest.TestCase):
         self.enc.encrypt()
         d_data = self.enc.decrypt()
         self.assertEqual(self.enc.data, d_data)
-
-
-class TestSecurity(unittest.TestCase):
-    """Testing to ensure password can not easily be brute forced
-    """
-
-    def test_brute(self):
-        self.enc = Encryption("secret message", "1234")

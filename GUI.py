@@ -23,7 +23,6 @@ class Application(Frame):
         self.connect["text"] = "Connect"
         self.connect.pack(side="top")
         self.connect["command"] = self.connect_command
-        self.en = Encryption("defaultData", "defaultPassword")
         self.pack()
 
         self.label = Label(self)
