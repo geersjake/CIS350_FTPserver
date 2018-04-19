@@ -77,6 +77,7 @@ class FTSock:
             self.sock = None
         self.sock = sock
         if self.sock:
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.sock.settimeout(self.timeout_get())
 
 
@@ -111,20 +112,19 @@ class FTSock:
         self.set_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
 
         try:
-            self.sock.bind(("", port))
             conn, addr = "", ""
 
             # Reject connections until the host matches (within 5m)
             self.timeout_push(300)
             while True:
+                self.sock.bind(("", port))
                 self.sock.listen(1)
                 conn, (addr, port) = self.sock.accept()
 
                 if addr == host:
                     break
                 else:
-                    print("Closing for some reason")
-                    self.set_socket(None)
+                    self.set_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
 
             self.timeout_pop()
 
