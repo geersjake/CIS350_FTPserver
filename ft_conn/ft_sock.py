@@ -175,6 +175,10 @@ class FTSock:
 
         if not self.sock:
             return None
+
+        if num == 0:
+            return b''
+
         chunks = []
         totalrecvd = 0
         while totalrecvd < num:
@@ -229,7 +233,6 @@ class FTSock:
         :raises BrokenSocketError: when the socket is broken before we
             send all of the bytes passed.
         """
-
         num = len(bstr)
         totalsent = 0
         while totalsent < num:

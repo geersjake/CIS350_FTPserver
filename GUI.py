@@ -46,7 +46,7 @@ class Application(Frame):
 
     def decrypt_file(self, file_data):
         # create encryption instance using data = contents
-        return Encryption(file_data,"").decrypt()
+        return Encryption(file_data, "").decrypt()
 
     def connect_command(self):
         # retrieves ip address and port number
@@ -80,10 +80,10 @@ class Application(Frame):
             self.frame.destroy()
         print("updating")
         self.frame = Frame(self, height=2000, width=2000)
-        for files in self.local_files.list_info(self.path):
+        for files in file_list:
             button = Button(self.frame)
             button["text"] = files.path.name
-            button["command"] = lambda: self.ft.request_file(files.path)
+            button["command"] = lambda file_name = files.path.name: self.ft.request_file(file_name)
             button.pack()
         self.frame.pack()
         self.pack()
@@ -102,7 +102,7 @@ class Application(Frame):
                 print("file list received")
             elif message_type == ft_conn.FTProto.RES_FILE:
                 file_name, file_data = data
-                pathlib.Path(file_name).write_bytes(self.decrypt_file(file_data))
+                pathlib.Path(file_name.decode()).write_bytes(self.decrypt_file(file_data))
                 print("file received")
             elif message_type is not None:
                 print("unknown request")

@@ -44,7 +44,7 @@ class Encryption:
     def encrypt(self):
         """Encrypt the data using PBKDF2 + salt function.
         :return: The encrypted data
-        :rtype: hash
+        :rtype: bytes
         """
         cryptor = rncryptor.RNCryptor()
         encrypted_data = cryptor.encrypt(self.data, self.password)
@@ -55,10 +55,10 @@ class Encryption:
     def decrypt(self):
         """Decrypt the hashed data using password
         :return: The decrypted data
-        :rtype: str
+        :rtype: bytes
         """
         cryptor = rncryptor.RNCryptor()
-        decrypted_data = cryptor.decrypt(self.data, self.password)
+        decrypted_data = cryptor.decrypt(self.data, self.password).encode()
         self.data = decrypted_data
 
         return self.data
