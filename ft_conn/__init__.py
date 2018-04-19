@@ -120,7 +120,7 @@ class FTConn:
         """
 
         self.fts.send_tok(FTProto.RES_FILE)
-        self.fts.send_rstring(file_name.encode())
+        self.fts.send_rstring(file_name)
         self.fts.send_rstring(file_data)
 
     def send_file_list(self, file_list):
@@ -153,7 +153,7 @@ class FTConn:
         """
 
         self.fts.send_tok(FTProto.REQ_FILE)
-        self.fts.send_rstring(filename.encode())
+        self.fts.send_rstring(filename)
 
     def request_file_list(self):
         """Requests and receives a file list from the other host.

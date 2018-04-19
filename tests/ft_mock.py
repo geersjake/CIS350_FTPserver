@@ -93,6 +93,8 @@ class MockSock():
             self.sbuf = self.sbuf[len(br):]
             return True
 
+        print(br, self.sbuf)
+
         return False
 
     def retrieve_bytes(self, clear=True):
@@ -114,7 +116,7 @@ class MockSock():
 class MockFTSock(FTSock):
     # MockSock does all of the hard stuff here, we just need to fake the connection
     def __init__(self, con=False):
-        super().__init__(False, MockSock(con))
+        super().__init__(MockSock(con))
 
         # What connect returns (if the bool is True, the socket gets "connected")
         self.crv = (True, "Server", "Success")
