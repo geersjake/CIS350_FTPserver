@@ -105,7 +105,6 @@ class Application(Frame):
 
     def request_handler(self):
         try:
-            print("requesting")
             message_type, data = self.ft.receive_data()
             if message_type == ft_conn.FTProto.REQ_LIST:
                 self.ft.send_file_list(self.local_files.list_info(self.path))

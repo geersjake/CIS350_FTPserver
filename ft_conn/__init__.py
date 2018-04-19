@@ -197,7 +197,12 @@ class FTConn:
 
     def receive_data(self):
         self.fts.timeout_push(0)
-        recv = self.fts.recv_bytes(1)
+        recv = None
+        try:
+            recv = self.fts.recv_bytes(1)
+        except BlockingIOError as ex:
+            pass
+
         self.fts.timeout_pop()
         if recv == FTProto.REQ_LIST:
             return recv, self.__receive_REQ_LIST()
