@@ -101,7 +101,7 @@ class Application(Frame):
             button = Button(self.frame)
             button["text"] = files.path.name
             # requests a file with the file name, file_name
-            button["command"] = lambda file_name = files.path.name: self.ft.request_file(file_name)
+            button["command"] = lambda file_name = files.path.name.encode(): self.ft.request_file(file_name)
             button.pack()
         self.frame.pack()
         self.pack()

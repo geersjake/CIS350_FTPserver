@@ -170,7 +170,7 @@ class FTConn:
         return None
 
     def __receive_req_file(self):
-        fname = self.fts.recv_rstring().decode()
+        fname = self.fts.recv_rstring()
         print("Received REQ_FILE", fname)
         return fname
 
