@@ -4,7 +4,6 @@ data from the other host after the connection is established.
 
 import socket
 import struct            # For networky data packing
-from queue import Queue  # For the timeout stack
 from .ft_error import BrokenSocketError
 
 # Basic network unit, used for connecting and transferring data over TCP
@@ -13,12 +12,8 @@ class FTSock:
     arbitrary message sending."""
 
 
-    def __init__(self, test=False, sock=None):
+    def __init__(self, sock=None):
         """Initializes the ft_sock object
-
-        :param test: If True, allows sockets to be reused quickly, which
-            makes testing much faster
-        :type test: boolean
 
         :param sock: Socket object to use. If not provided (or None), we
         generate a new one.
