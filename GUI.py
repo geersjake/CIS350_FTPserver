@@ -42,26 +42,11 @@ class Application(Frame):
 
     def encrypt_file(self, file_data):
         # create encryption instance with data = file.read()
-        en = Encryption(file_data, "")
-        # encrypt
-        enc_data = en.encrypt()
-        return enc_data
+        return Encryption(file_data, "").encrypt()
 
     def decrypt_file(self, file_data):
-        # open the file containing crazy egyptian bytes and read it into content
-        with open(file_data, 'rb') as file:
-            contents = file.read()
-        # open decrypted data file for writing
-        dec_data = open("decrypted_data.txt", "w")
-
         # create encryption instance using data = contents
-        en2 = Encryption(contents, "")
-
-        # write to the file
-        dec_data.write(en2.decrypt())
-
-        dec_data.close()
-        print("Your file " + file_data.name + " has been decrypted and can be viewed")
+        return Encryption(file_data,"").decrypt()
 
     def connect_command(self):
         # retrieves ip address and port number
@@ -110,14 +95,14 @@ class Application(Frame):
                 self.ft.send_file_list(self.local_files.list_info(self.path))
                 print("file list sent")
             elif message_type == ft_conn.FTProto.REQ_FILE:
-                self.ft.send_file(self.encrypt_file(pathlib.Path(data).read_bytes()))
+                self.ft.send_file(data, self.encrypt_file(pathlib.Path(data).read_bytes()))
                 print("file sent")
             elif message_type == ft_conn.FTProto.RES_LIST:
                 self.update_remote_file_list(data)
                 print("file list received")
             elif message_type == ft_conn.FTProto.RES_FILE:
-                # TODO fix me
-                self.decrypt_file(data)
+                file_name, file_data = data
+                pathlib.Path(file_name).write_bytes(self.decrypt_file(file_data))
                 print("file received")
             elif message_type is not None:
                 print("unknown request")
