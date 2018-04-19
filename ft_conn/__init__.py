@@ -148,9 +148,6 @@ class FTConn:
         :param filename: The name of the file to request.
         :type filename: string
 
-        :return: The contents of the file requested.
-        :rtype: raw string
-
         :raises UnexpectedValueError: when the other host does
             not respond to our request properly.
         """
@@ -161,9 +158,6 @@ class FTConn:
     def request_file_list(self):
         """Requests and receives a file list from the other host.
 
-        :return: A list containing all of the file information requested.
-        :rtype: list of FileInfo
-
         :raises UnexpectedValueError: when the other host does
             not respond to our request properly.
         """
@@ -171,16 +165,16 @@ class FTConn:
 
 
 
-    def __receive_REQ_LIST(self):
+    def __receive_req_list(self):       # pylint: disable = no-self-use
         print("Received REQ_LIST")
         return None
 
-    def __receive_REQ_FILE(self):
+    def __receive_req_file(self):
         fname = self.fts.recv_rstring().decode()
         print("Received REQ_FILE", fname)
         return fname
 
-    def __receive_RES_LIST(self):
+    def __receive_res_list(self):
         file_list = []
         for _ in range(self.fts.recv_int()):
             path = self.fts.recv_rstring().decode()
@@ -190,26 +184,26 @@ class FTConn:
 
         return file_list
 
-    def __receive_RES_FILE(self):
+    def __receive_res_file(self):
         return self.fts.recv_rstring(), self.fts.recv_rstring()
-        
+
 
     def receive_data(self):
         self.fts.timeout_push(0)
         recv = None
         try:
             recv = self.fts.recv_bytes(1)
-        except BlockingIOError as ex:
+        except BlockingIOError:
             pass
 
         self.fts.timeout_pop()
         if recv == FTProto.REQ_LIST:
-            return recv, self.__receive_REQ_LIST()
+            return recv, self.__receive_req_list()
         elif recv == FTProto.REQ_FILE:
-            return recv, self.__receive_REQ_FILE()
+            return recv, self.__receive_req_file()
         elif recv == FTProto.RES_LIST:
-            return recv, self.__receive_RES_LIST()
+            return recv, self.__receive_res_list()
         elif recv == FTProto.RES_FILE:
-            return recv, self.__receive_RES_FILE()
+            return recv, self.__receive_res_file()
         else:
             return recv, None
