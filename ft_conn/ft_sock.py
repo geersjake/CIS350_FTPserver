@@ -4,7 +4,6 @@ data from the other host after the connection is established.
 
 import socket
 import struct            # For networky data packing
-from queue import Queue  # For the timeout stack
 from .ft_error import BrokenSocketError
 
 # Basic network unit, used for connecting and transferring data over TCP
@@ -13,19 +12,15 @@ class FTSock:
     arbitrary message sending."""
 
 
-    def __init__(self, test=False, sock=None):
+    def __init__(self, sock=None):
         """Initializes the ft_sock object
-
-        :param test: If True, allows sockets to be reused quickly, which
-            makes testing much faster
-        :type test: boolean
 
         :param sock: Socket object to use. If not provided (or None), we
         generate a new one.
         :type sock: socket.socket()
         """
 
-        self.sock = None
+        self.sock = sock
         # Initialize timeout stack
         self.timeout_stack = []
 
@@ -64,6 +59,9 @@ class FTSock:
         else:
             return None
 
+    def timeout_set(self, timeout):
+        self.sock.settimeout(timeout)
+
     def set_socket(self, sock):
         if self.sock:
             try:
@@ -74,7 +72,9 @@ class FTSock:
             self.sock = None
         self.sock = sock
         if self.sock:
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.sock.settimeout(self.timeout_get())
+
 
     def __connect_client(self, host, port):
         """Connect to host as if we are the client and they are the server.
@@ -107,20 +107,19 @@ class FTSock:
         self.set_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
 
         try:
-            self.sock.bind(("", port))
             conn, addr = "", ""
 
             # Reject connections until the host matches (within 5m)
             self.timeout_push(300)
             while True:
+                self.sock.bind(("", port))
                 self.sock.listen(1)
                 conn, (addr, port) = self.sock.accept()
 
                 if addr == host:
                     break
                 else:
-                    print("Closing for some reason")
-                    self.set_socket(None)
+                    self.set_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
 
             self.timeout_pop()
 

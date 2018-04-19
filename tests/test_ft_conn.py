@@ -74,7 +74,7 @@ class TestFTConn:
         assert c.fts.sock.check_bytes(pi(correct_version))
         assert c.fts.sock.ensure_esend() and c.fts.sock.ensure_erecv()
 
-    def test_connect_hs_s_v(self):
+    def tst_connect_hs_s_v(self):
         # Testing version mismatch
         c = FTConn(MockFTSock())
         c.fts.sock.append_bytes(correct_handshake)
@@ -114,12 +114,12 @@ class TestFTConn:
 
         assert c.connect(0, 0) == "Handshake failed"
 
-        # Check sent handhsake initiation
+        # Check sent handshake initiation
         assert c.fts.sock.check_bytes(correct_handshake)
         assert c.fts.sock.check_bytes(pi(correct_version))
         assert c.fts.sock.ensure_esend() and c.fts.sock.ensure_erecv()
 
-    def test_connect_hs_c_v(self):
+    def tst_connect_hs_c_v(self):
         # Testing version mismatch
         c = FTConn(MockFTSock())
 
@@ -150,129 +150,67 @@ class TestFTConn:
 
         assert c.connect(0, 0) == "Success"
 
-        # Check sent handhsake initiation
+        # Check sent handshake initiation
         assert c.fts.sock.check_bytes(correct_handshake)
         assert c.fts.sock.check_bytes(pi(correct_version))
         assert c.fts.sock.ensure_esend() and c.fts.sock.ensure_erecv()
 
-    def test_cfr_none(self):
-        # Testing check_for_request with no request
+    def test_recv_req_l(self):
+        # Testing receive list request
         c = FTConn(MockFTSock(True))
 
-        assert c.check_for_request() == (FTProto.REQ_NONE, None)
+        c.fts.sock.append_bytes(FTProto.REQ_LIST)
+
+        assert c.receive_data() == (FTProto.REQ_LIST, None)
         assert c.fts.sock.ensure_esend() and c.fts.sock.ensure_erecv()
 
-    def test_cfr_file(self):
+    def test_recv_req_f(self):
+        # Testing receive file request
         c = FTConn(MockFTSock(True))
 
-        c.fts.sock.append_bytes(FTProto.REQ_FILE.value)
-
+        c.fts.sock.append_bytes(FTProto.REQ_FILE)
         c.fts.sock.append_bytes(pr(test_file_name.encode()))
 
-        assert c.check_for_request() == (FTProto.REQ_FILE, test_file_name)
+        assert c.receive_data() == (FTProto.REQ_FILE, test_file_name)
         assert c.fts.sock.ensure_esend() and c.fts.sock.ensure_erecv()
 
-    def test_cfr_list(self):
+    def test_send_req_l(self):
+        # Testing sending a list request
         c = FTConn(MockFTSock(True))
 
-        c.fts.sock.append_bytes(FTProto.REQ_LIST.value)
+        c.request_file_list()
 
-        assert c.check_for_request() == (FTProto.REQ_LIST, None)
+        assert c.fts.sock.check_bytes(FTProto.REQ_LIST)
         assert c.fts.sock.ensure_esend() and c.fts.sock.ensure_erecv()
 
-    def test_send_file(self):
+    def test_send_res_l(self):
+        # Testing sending a file response
         c = FTConn(MockFTSock(True))
 
-        c.send_file(test_file_contents)
+        c.send_file(test_file_name.encode(), test_file_contents)
 
-        assert c.fts.sock.check_bytes(FTProto.RES_FILE.value)
+        assert c.fts.sock.check_bytes(FTProto.RES_FILE)
+        assert c.fts.sock.check_bytes(pr(test_file_name.encode()))
         assert c.fts.sock.check_bytes(pr(test_file_contents))
-        assert c.fts.sock.ensure_esend() and c.fts.sock.ensure_erecv()
+        assert c.fts.sock.ensure_erecv() and c.fts.sock.ensure_esend()
 
-    def test_request_file_c(self):
-        # Test correct receiving file
+    def test_send_req_f(self):
+        # Testing sending a file request
         c = FTConn(MockFTSock(True))
 
-        c.fts.sock.append_bytes(FTProto.RES_FILE.value)
+        c.request_file(test_file_name.encode())
+
+        assert c.fts.sock.check_bytes(FTProto.REQ_FILE)
+        assert c.fts.sock.check_bytes(pr(test_file_name.encode()))
+        assert c.fts.sock.ensure_erecv() and c.fts.sock.ensure_esend()
+
+    def test_recv_res_f(self):
+        # Testing receiving a file response
+        c = FTConn(MockFTSock(True))
+
+        c.fts.sock.append_bytes(FTProto.RES_FILE)
+        c.fts.sock.append_bytes(pr(test_file_name.encode()))
         c.fts.sock.append_bytes(pr(test_file_contents))
 
-        assert c.request_file(test_file_name) == test_file_contents
-
-        assert c.fts.sock.check_bytes(FTProto.REQ_FILE.value)
-        assert c.fts.sock.check_bytes(pr(test_file_name.encode()))
-        assert c.fts.sock.ensure_esend() and c.fts.sock.ensure_erecv()
-
-    def test_request_file_i(self):
-        # Test invalid response
-        c = FTConn(MockFTSock(True))
-
-        c.fts.sock.append_bytes(FTProto.TINVALID.value) # wrong (invalid) response
-
-        with pytest.raises(UnexpectedValueError) as err:
-            c.request_file(test_file_name)
-
-        assert err.value.state == str((FTProto.RES_FILE,))
-        assert err.value.value == str(FTProto.TINVALID.value)
-        assert c.fts.sock.check_bytes(FTProto.REQ_FILE.value)
-        assert c.fts.sock.check_bytes(pr(test_file_name.encode()))
-        assert c.fts.sock.ensure_esend() and not c.fts.sock.ensure_erecv()
-
-    def test_request_file_n(self):
-        # Test no response to request
-        c = FTConn(MockFTSock(True))
-
-        with pytest.raises(UnexpectedValueError) as err:
-            c.request_file(test_file_name)
-
-        assert err.value.state == str((FTProto.RES_FILE,))
-        assert err.value.value == str(FTProto.REQ_NONE.value)
-        assert c.fts.sock.check_bytes(FTProto.REQ_FILE.value)
-        assert c.fts.sock.check_bytes(pr(test_file_name.encode()))
-        assert c.fts.sock.ensure_esend() and c.fts.sock.ensure_erecv()
-
-
-    def test_sr_file_list(self):
-        # Generate fake file list
-        fileList = []
-
-        for i in range(20):
-            fake_hash = str(i%10).encode() * (i % 32) + (b'0' * (32-i))
-            f_id = i % 6 == 5
-            item = FileInfo(path=Path().resolve(), file_hash = fake_hash, is_dir = f_id, mtime = i)
-            fileList.append(item)
-
-        # Test only the token exchange
-        c = FTConn(MockFTSock(True))
-
-        c.send_file_list(fileList)
-
-        assert c.fts.sock.check_bytes(FTProto.RES_LIST.value)
-        # Make sure it read all (nothing) but still sent stuff (the list)
-        assert c.fts.sock.ensure_erecv() and not c.fts.sock.ensure_esend()
-
-
-        # Test exchange by using two fake sockets (no requests)
-        c1 = FTConn(MockFTSock(True))
-
-        c2 = FTConn(MockFTSock(True))
-
-        c1.send_file_list(fileList)
-        c2.fts.sock.append_bytes(c1.fts.sock.retrieve_bytes())
-        rfl = c2.request_file_list()
-
-        assert c2.fts.sock.check_bytes(FTProto.REQ_LIST.value)
-
-        # Make sure the response is the same list
-        assert len(rfl) == 20
-
-        for i in range(20):
-            assert file_info_equals(rfl[i], fileList[i])
-
-        assert c1.fts.sock.ensure_esend() and c1.fts.sock.ensure_erecv()
-        assert c2.fts.sock.ensure_esend() and c2.fts.sock.ensure_erecv()
-
-    def test_ftsock_gen(self):
-        # Testing the default contructor for FTConn (should be removed
-        # when actual tests come)
-        c = FTConn()
-        assert isinstance(c.fts, FTSock)
+        assert c.receive_data() == (FTProto.RES_FILE, (test_file_name.encode(), test_file_contents))
+        assert c.fts.sock.ensure_erecv() and c.fts.sock.ensure_esend()
