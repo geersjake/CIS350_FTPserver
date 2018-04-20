@@ -3,12 +3,15 @@ from encryption import Encryption
 import ft_conn
 import file_info
 import pathlib
+import os
 
 
 class Application(Frame):
     def __init__(self, master=None):
         """Initialize an instance of the Application and creates widgets"""
         super().__init__(master)
+
+        os.chdir("shared_files")
 
         # For the text box to input IP Address
         self.entry = Entry(self)
