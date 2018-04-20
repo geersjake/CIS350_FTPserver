@@ -11,6 +11,7 @@ class Application(Frame):
         """Initialize an instance of the Application and creates widgets"""
         super().__init__(master)
 
+        os.makedirs("shared_files", exist_ok=True)
         os.chdir("shared_files")
 
         # For the text box to input IP Address
