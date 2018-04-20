@@ -117,7 +117,7 @@ class Application(Frame):
                 self.ft.send_file_list(self.local_files.list_info(self.path))
                 print("file list sent")
             elif message_type == ft_conn.FTProto.REQ_FILE:
-                self.ft.send_file(data, self.encrypt_file(pathlib.Path(data).read_bytes()))
+                self.ft.send_file(data, self.encrypt_file(pathlib.Path(data.decode()).read_bytes()))
                 print("file sent")
             elif message_type == ft_conn.FTProto.RES_LIST:
                 self.update_remote_file_list(data)
