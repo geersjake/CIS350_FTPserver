@@ -168,7 +168,7 @@ class TestFTConn:
         c.fts.sock.append_bytes(FTProto.REQ_FILE)
         c.fts.sock.append_bytes(pr(test_file_name.encode()))
 
-        assert c.receive_data() == (FTProto.REQ_FILE, test_file_name)
+        assert c.receive_data() == (FTProto.REQ_FILE, test_file_name.encode())
         assert c.fts.sock.ensure_esend() and c.fts.sock.ensure_erecv()
 
     def test_send_req_l(self):
