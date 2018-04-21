@@ -4,7 +4,6 @@ data from the other host after the connection is established.
 
 import socket
 import struct            # For networky data packing
-from queue import Queue  # For the timeout stack
 from .ft_error import BrokenSocketError
 
 # Basic network unit, used for connecting and transferring data over TCP
@@ -13,28 +12,17 @@ class FTSock:
     arbitrary message sending."""
 
 
-    def __init__(self, test=False, sock=None):
+    def __init__(self, sock=None):
         """Initializes the ft_sock object
-
-        :param test: If True, allows sockets to be reused quickly, which
-            makes testing much faster
-        :type test: boolean
 
         :param sock: Socket object to use. If not provided (or None), we
         generate a new one.
         :type sock: socket.socket()
         """
 
-        if sock is None:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        else:
-            self.sock = sock
-
-        if test:
-            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
+        self.sock = sock
         # Initialize timeout stack
-        self.timeout_stack = Queue()
+        self.timeout_stack = []
 
     # 	These three functions allow us to quickly and easily switch between
     # timeouts
@@ -46,8 +34,9 @@ class FTSock:
         :type val: number
         """
 
-        self.timeout_stack.put(self.sock.gettimeout())
-        self.sock.settimeout(val)
+        self.timeout_stack.append(val)
+        if self.sock:
+            self.sock.settimeout(self.timeout_get())
 
     def timeout_pop(self):
         """Pop a value from the timeout stack (basically restore a timeout to
@@ -59,32 +48,33 @@ class FTSock:
         :rtype: number
         """
 
-        oldtimeout = self.sock.gettimeout()
-
-        # If the queue is empty, default to None (blocking mode) (shouldn't happen)
-        newtimeout = None if self.timeout_stack.empty() else self.timeout_stack.get()
-
-        self.sock.settimeout(newtimeout)
-        return oldtimeout
-
-    def timeout_set(self, val):
-        """Set the timeout, without messing with the stack (and by doing so, messing
-        up the stack).
-
-        :param val: timeout value to set, in seconds.
-        :type val: number
-        """
-
-        self.sock.settimeout(val)
+        last = self.timeout_stack.pop()
+        if self.sock:
+            self.sock.settimeout(self.timeout_get())
+        return last
 
     def timeout_get(self):
-        """Get the current timeout value, without messing with the stack.
+        if len(self.timeout_stack) >= 1:
+            return self.timeout_stack[-1]
+        else:
+            return None
 
-        :return: The current timeout value.
-        :rtype: number
-        """
+    def timeout_set(self, timeout):
+        self.sock.settimeout(timeout)
 
-        return self.sock.gettimeout()
+    def set_socket(self, sock):
+        if self.sock:
+            try:
+                self.sock.shutdown(socket.SHUT_RDWR)
+            except OSError as ex:
+                print('OSError while shutting down socket:', ex)
+            self.sock.close()
+            self.sock = None
+        self.sock = sock
+        if self.sock:
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.sock.settimeout(self.timeout_get())
+
 
     def __connect_client(self, host, port):
         """Connect to host as if we are the client and they are the server.
@@ -96,7 +86,13 @@ class FTSock:
         :type port: number
         """
 
-        self.sock.connect((host, port))
+        self.set_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+
+        try:
+            self.sock.connect((host, port))
+        except Exception as ex:
+            self.set_socket(None)
+            raise ex
 
     def __connect_server(self, host, port):
         """ Connect to host as if we are the server and they are the client (i.e.
@@ -108,24 +104,29 @@ class FTSock:
         :param port: Port to listen on.
         :type port: number
         """
+        self.set_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
 
-        self.sock.bind(("", port))
-        conn, addr = "", ""
+        try:
+            conn, addr = "", ""
 
-        # Reject connections until the host matches (within 5m)
-        self.timeout_push(300)
-        while True:
-            self.sock.listen(1)
-            conn, (addr, port) = self.sock.accept()
+            # Reject connections until the host matches (within 5m)
+            self.timeout_push(300)
+            while True:
+                self.sock.bind(("", port))
+                self.sock.listen(1)
+                conn, (addr, port) = self.sock.accept()
 
-            if addr == host:
-                break
-            else:
-                conn.close()
+                if addr == host:
+                    break
+                else:
+                    self.set_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
 
-        self.timeout_pop()
+            self.timeout_pop()
 
-        self.sock = conn
+            self.sock = conn
+        except Exception as ex:
+            self.set_socket(None)
+            raise ex
 
     def connect(self, host, port):
         """Starts a pseudo-symmetric connection by trying to connect to
@@ -153,18 +154,8 @@ class FTSock:
         # This is the error that we will get if there is no server
         # 	running on the other host
         except ConnectionRefusedError:
-
-            try: # Connecting as server <- client
-                self.__connect_server(host, port)
-            except socket.error as smsg:
-                print("s", smsg)
-                return False, "Server", smsg
-
+            self.__connect_server(host, port)
             return True, "Server", "Success"
-
-        except socket.error as cmsg:
-            print("c", cmsg)
-            return False, "Client", cmsg
 
         return True, "Client", "Success"
 
@@ -180,6 +171,12 @@ class FTSock:
         :raises BrokenSocketError: when the socket is broken before
             we recieve the specified number of bytes.
         """
+
+        if not self.sock:
+            return None
+
+        if num == 0:
+            return b''
 
         chunks = []
         totalrecvd = 0
@@ -235,7 +232,6 @@ class FTSock:
         :raises BrokenSocketError: when the socket is broken before we
             send all of the bytes passed.
         """
-
         num = len(bstr)
         totalsent = 0
         while totalsent < num:
@@ -251,7 +247,7 @@ class FTSock:
         :type token: FTProto
         """
 
-        self.send_bytes(token.value)
+        self.send_bytes(token)
 
     def send_struct(self, fmt, *data):
         """Packs and sends data over the network as a struct.

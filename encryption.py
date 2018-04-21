@@ -28,15 +28,15 @@ class Encryption:
     def __init__(self, data, password):
         """Initialize an instance of Encryption
         :param data: The data to encrypt or decrypt
-        :type data: str
+        :type data: bytes
         :param password: The password key to encrypt or decrypt data
         :type password: str
         """
-        #if not isinstance(data, str):
-            #raise DataError("Error: Data param must be string")  # TODO: handle
+        if not isinstance(data, bytes):
+            raise DataError("Error: Data param must be bytes")
 
-        #if not isinstance(password, str):
-            #raise PasswordError("Error: Password must be string")  # TODO: handle
+        if not isinstance(password, str):
+            raise PasswordError("Error: Password must be string")
 
         self._data = data
         self._password = password
@@ -44,7 +44,7 @@ class Encryption:
     def encrypt(self):
         """Encrypt the data using PBKDF2 + salt function.
         :return: The encrypted data
-        :rtype: hash
+        :rtype: bytes
         """
         cryptor = rncryptor.RNCryptor()
         encrypted_data = cryptor.encrypt(self.data, self.password)
@@ -55,10 +55,10 @@ class Encryption:
     def decrypt(self):
         """Decrypt the hashed data using password
         :return: The decrypted data
-        :rtype: str
+        :rtype: bytes
         """
         cryptor = rncryptor.RNCryptor()
-        decrypted_data = cryptor.decrypt(self.data, self.password)
+        decrypted_data = cryptor.decrypt(self.data, self.password).encode()
         self.data = decrypted_data
 
         return self.data

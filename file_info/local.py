@@ -90,7 +90,7 @@ class LocalFileInfoBrowser:
         return (
             path not in self._cache
             or not path.exists()
-            or path.is_dir and any(
+            or path.is_dir() and any(
                 (self.is_possibly_changed(f_path) for f_path in path.iterdir()))
             or path.stat().st_mtime_ns > self._cache[path].mtime)
 

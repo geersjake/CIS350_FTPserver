@@ -1,13 +1,15 @@
-
 # pylint: disable = missing-docstring, missing-return-doc, missing-return-type-doc
 # pylint: disable = invalid-name
 # pylint: disable = no-self-use
 # pylint: disable = protected-access
 
+import pytest
+
+from base64 import b64decode
 from pathlib import PurePath
 from hashlib import sha256
 from os import fsencode
-from file_info import FileInfo, LocalFileInfoBrowser
+from file_info import FileInfo, LocalFileInfoBrowser, UnrecognizedSpecialFile
 
 class MockPath:
 
@@ -15,6 +17,7 @@ class MockPath:
                  exists,
                  stat,
                  is_dir,
+                 is_file,
                  read_bytes = b"",
                  iterdir = []):
 
@@ -23,6 +26,7 @@ class MockPath:
         self._exists = exists
         self._stat = stat
         self._is_dir = is_dir
+        self._is_file = is_file
         self._read_bytes = read_bytes
         self._iterdir = iterdir
 
@@ -33,7 +37,7 @@ class MockPath:
     def is_dir(self):
         return self._is_dir
     def is_file(self):
-        return not self.is_dir()
+        return self._is_file
     def read_bytes(self):
         return self._read_bytes
     def iterdir(self):
@@ -49,6 +53,7 @@ def get_mock_file_path(name="MOCK_FILE", read_bytes=b"Mock contents"):
                     exists=True,
                     stat=MockStatResult(st_mtime_ns=0),
                     is_dir=False,
+                    is_file=True,
                     read_bytes=read_bytes)
 
 def get_mock_dir_path(name="MOCK_DIR", *, iterdir=[]):
@@ -56,12 +61,28 @@ def get_mock_dir_path(name="MOCK_DIR", *, iterdir=[]):
                     exists=True,
                     stat=MockStatResult(st_mtime_ns=0),
                     is_dir=True,
+                    is_file=False,
                     iterdir=iterdir)
+
+def get_mock_special_file_path(name="MOCK_SPECIAL_FILE"):
+    return MockPath(name,
+                    exists=True,
+                    stat=MockStatResult(st_mtime_ns=0),
+                    is_dir=False,
+                    is_file=False)
 
 def get_mock_hash():
     return b"NOT A REAL HASH! THIS IS A TEST!" # must be 32 bytes
     #        00000000011111111112222222222333
     #        12345678901234567890123456789012
+
+
+
+class TestFileInfo:
+
+    def test_repr(self):
+        fi = FileInfo(path='a', file_hash=b64decode('b000'), is_dir='c', mtime='d')
+        assert repr(fi) == '<FileInfo: path=\'a\' hash=b\'b000\' is_dir=c mtime=d>'
 
 
 
@@ -83,6 +104,12 @@ class TestLocalFileInfoBrowser:
         h.update(fsencode("HAM"))
         h.update(sha256(b"sandwich").digest())
         assert L.get_fresh_hash(p) == h.digest()
+
+    def test__get_fresh_hash__for_special_file(self):
+        p = get_mock_special_file_path()
+        L = LocalFileInfoBrowser()
+        with pytest.raises(UnrecognizedSpecialFile) as e:
+            L.get_fresh_hash(p)
 
     def test_is_possibly_changed__for_updated_mtime(self):
         p = get_mock_file_path()
@@ -121,3 +148,12 @@ class TestLocalFileInfoBrowser:
         p._exists = False
         L._shallow_refresh(p)
         assert p not in L._cache
+
+    def test__force_refresh(self):
+        p = get_mock_dir_path(iterdir=[
+            get_mock_file_path("HAM", b"sandwich"),
+            get_mock_dir_path("EGGS")])
+        L = LocalFileInfoBrowser()
+        L.force_refresh(p)
+        assert p in L._cache
+        assert p._iterdir[1] in L._cache

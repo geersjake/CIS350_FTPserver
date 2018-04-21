@@ -9,7 +9,7 @@ from file_info import FileInfo
 from .ft_sock import FTSock
 from .ft_error import UnexpectedValueError
 
-class FTProto(enum.Enum):
+class FTProto:
     """Internally used to define control tokens for data transmission.
     """
 
@@ -18,10 +18,6 @@ class FTProto(enum.Enum):
 
     # Used to request a file. Following is a string of the file name/path
     REQ_FILE = b'f'
-
-    # Used to represent a lack of requests and invalid tokens, respectively.
-    REQ_NONE = b'None'
-    TINVALID = b'Invalid'
 
     # Used to send the filelist. Following is a '!i' representing the
     # number of entries, and then each entry is sent as a string (path),
@@ -53,56 +49,6 @@ class FTConn:
         else:
             self.fts = fts
 
-    @staticmethod
-    def __gtv(tok_val):
-        """Converts a raw char to a control token.
-
-        :param tok_val: The string value of some token in FTProto.
-        :type tok_val: raw string (1 char length)
-
-        :return: The enum equivalent of the token.
-        :rtype: FTProto
-        """
-
-        # Horrifying hack to check equality to enum
-        reqtoks = [tok for tok in FTProto if tok.value == tok_val]
-
-        if len(reqtoks) != 1:
-            return FTProto.TINVALID
-
-        return reqtoks[0]
-
-    def __expect_tok(self, toktuple):
-        """Receives a token and ensures that it was one that we expected.
-
-        :param toktuple: A tuple containing every possible token that we
-            expect.
-        :type toktuple: tuple of FTProto
-
-        :return: The token we actually received.
-        :rtype: FTProto
-
-        :raises UnexpectedValueError: when we receive a token we were not
-            expecting.
-        """
-
-        try:
-            tokr = self.fts.recv_bytes(1)
-        except timeout:
-                                            # For some reason pylint doesn't think
-                                            # FTProto.<x>.value is of type bytes,
-                                            # but it is, so we need to ignore the error
-            tokr = FTProto.REQ_NONE.value   # pylint: disable = redefined-variable-type
-
-
-        tok = self.__gtv(tokr)
-
-        if tok not in toktuple:
-            tokrs = tok.value
-
-            raise UnexpectedValueError(str(toktuple), str(tokrs))
-
-        return tok
 
     def __handshake(self, mode):
         """Conducts a handshake to ensure that the other host is running
@@ -166,36 +112,15 @@ class FTConn:
 
         return message
 
-    def check_for_request(self):
-        """Checks the network buffer to see if there are any requests
-        we need to respond to.
-
-        :return: FTProto.REQ_LIST, FTProto.REQ_FILE, or FTProto.REQ_NONE.
-            If FTProto.REQ_FILE, also the filename requested, otherwise None.
-        :rtype: FTProto, string
-
-        :raises UnexpectedValueError: when we receive an invalid request.
-        """
-
-        self.fts.timeout_push(0.1)
-        req = self.__expect_tok((FTProto.REQ_FILE, FTProto.REQ_LIST, FTProto.REQ_NONE))
-        self.fts.timeout_pop()
-
-        if req == FTProto.REQ_FILE:
-            fname = self.fts.recv_rstring().decode()
-        else:
-            fname = None
-
-        return req, fname
-
-    def send_file(self, file_data):
+    def send_file(self, file_name, file_data):
         """Sends file contents to other host.
-
+        :param file_name: The file's name
         :param file_data: The file contents.
         :type file_data: raw string
         """
 
         self.fts.send_tok(FTProto.RES_FILE)
+        self.fts.send_rstring(file_name)
         self.fts.send_rstring(file_data)
 
     def send_file_list(self, file_list):
@@ -213,7 +138,7 @@ class FTConn:
 
         for file_info in file_list:
             self.fts.send_rstring(str(file_info.path).encode())
-            self.fts.send_struct('!32s?i', file_info.hash,
+            self.fts.send_struct('!32s?Q', file_info.hash,
                                  file_info.is_dir,
                                  file_info.mtime)
 
@@ -223,43 +148,62 @@ class FTConn:
         :param filename: The name of the file to request.
         :type filename: string
 
-        :return: The contents of the file requested.
-        :rtype: raw string
-
         :raises UnexpectedValueError: when the other host does
             not respond to our request properly.
         """
 
         self.fts.send_tok(FTProto.REQ_FILE)
-        self.fts.send_rstring(filename.encode())
-
-        self.__expect_tok((FTProto.RES_FILE,))
-
-        return self.fts.recv_rstring()
+        self.fts.send_rstring(filename)
 
     def request_file_list(self):
         """Requests and receives a file list from the other host.
 
-        :return: A list containing all of the file information requested.
-        :rtype: list of FileInfo
-
         :raises UnexpectedValueError: when the other host does
             not respond to our request properly.
         """
-
-        file_list = []
-
-
         self.fts.send_tok(FTProto.REQ_LIST)
 
-        self.__expect_tok((FTProto.RES_LIST,))
 
-        list_len = self.fts.recv_int()
 
-        for _ in range(list_len):
+    def __receive_req_list(self):       # pylint: disable = no-self-use
+        print("Received REQ_LIST")
+        return None
+
+    def __receive_req_file(self):
+        fname = self.fts.recv_rstring()
+        print("Received REQ_FILE", fname)
+        return fname
+
+    def __receive_res_list(self):
+        file_list = []
+        for _ in range(self.fts.recv_int()):
             path = self.fts.recv_rstring().decode()
-            (hashd, is_dir, mtime) = self.fts.recv_struct('!32s?i')
+            (hashd, is_dir, mtime) = self.fts.recv_struct('!32s?Q')
 
             file_list.append(FileInfo(path=Path(path), file_hash=hashd, is_dir=is_dir, mtime=mtime))
 
         return file_list
+
+    def __receive_res_file(self):
+        return self.fts.recv_rstring(), self.fts.recv_rstring()
+
+
+    def receive_data(self):
+        self.fts.timeout_push(0)
+        recv = None
+        try:
+            recv = self.fts.recv_bytes(1)
+        except BlockingIOError:
+            pass
+
+        self.fts.timeout_pop()
+        if recv == FTProto.REQ_LIST:
+            return recv, self.__receive_req_list()
+        elif recv == FTProto.REQ_FILE:
+            return recv, self.__receive_req_file()
+        elif recv == FTProto.RES_LIST:
+            return recv, self.__receive_res_list()
+        elif recv == FTProto.RES_FILE:
+            return recv, self.__receive_res_file()
+        else:
+            return recv, None
